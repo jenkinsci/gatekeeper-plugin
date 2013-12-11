@@ -44,11 +44,11 @@
        </dependency>
     </dependencies>
 
-       <distributionManagement>
+    <distributionManagement>
         <repository>
-            <id>laptop</id>
-            <name>laptop</name>
-            <url>http://delll:8080/archiva/repository/internal/</url>
+            <id>localh</id>
+            <name>localh</name>
+            <url>http://localhost:1337/archiva/repository/internal/</url>
         </repository>
         <!--<snapshotRepository>
             <uniqueVersion>false</uniqueVersion>
