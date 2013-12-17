@@ -1,0 +1,16 @@
+<!-- This template is used for the Global settings of the GatekeeperPlugin -->
+
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+  <f:section title="Gatekeeper Rietveld configuration">
+    <f:entry title="URL" field="url"
+          description="Leave this empty if you do not want to use Rietveld integration.
+URL to the Rietveld instance (eg: http://codereview.awesome.lan/).
+Needs in-house customization for this to work.">
+      <f:textbox />
+    </f:entry>
+    <f:entry title="HG repo base url" field="repoBase"
+          description="Base URL for code server. Eg: ssh://codeserver//var/hg/. Is only used when Rietveld support is active.">
+      <f:textbox />
+    </f:entry>
+  </f:section>
+</j:jelly>

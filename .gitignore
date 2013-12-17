@@ -5,8 +5,8 @@
 *.war
 *.ear
 
-**/.idea/
-**/target/
-**/work/
+.idea/
+target/
+work/
 
 *.iml
