@@ -12,6 +12,7 @@ import hudson.tasks.BuildStepDescriptor;
 import lombok.Getter;
 import lombok.extern.java.Log;
 import net.sf.json.JSONObject;
+import org.apache.commons.io.IOUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.paylogic.fogbugz.FogbugzCase;
@@ -22,6 +23,7 @@ import redis.clients.jedis.Jedis;
 
 import javax.swing.text.html.HTML;
 import java.io.PrintStream;
+import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.logging.Level;
@@ -72,24 +74,39 @@ public class GatekeeperPlugin extends Builder {
 
         /* Actual Gatekeepering logic. Seperated to work differently when Rietveld support is active. */
         boolean runNormalMerge = this.getDescriptor().getUrl().isEmpty();
-        if (runNormalMerge) {
+        if (!runNormalMerge) {
             // Use Rietveld support.
             String featureRepoUrl = this.getDescriptor().getRepoBase() + repo_path;  // Should produce correct url.
 
-            URL uri = new URL(this.getDescriptor().getUrl() + "/get_latest_ok_for_case/" + Integer.toString(usableCaseId)  + "/");
+            String rietveldUrl = this.getDescriptor().getUrl() + "/get_latest_ok_for_case/" + Integer.toString(usableCaseId)  + "/";
+            URL uri = new URL(rietveldUrl);
             HttpURLConnection con = (HttpURLConnection) uri.openConnection();
             if (con.getResponseCode() != 200) {
-                log.log(Level.SEVERE, "Error while fetching latest OK revision from Rietveld.");
-                return false;
+                log.log(Level.SEVERE, "Error while fetching latest OK revision from Rietveld.\n");
+                listener.getLogger().append("Connected to: " + rietveldUrl + "\n");
+
+                if (con.getResponseCode() == 404) {
+                    listener.getLogger().append("Build was aborted because the case is not approved yet.\n");
+                } else if (con.getResponseCode() == 500) {
+                    listener.getLogger().append("Build was aborted because the case does not exist in CodeReview.\n");
+                }
+
+                throw new Exception("Error while fetching latest OK revision from Rietveld. Response code: " +
+                        Integer.toString(con.getResponseCode()));
             }
 
-            String okRevision = con.getInputStream().toString();
+            StringWriter sw = new StringWriter();
+            IOUtils.copy(con.getInputStream(), sw, "UTF-8");
+            String okRevision = sw.toString().replace("\n", "");
+            listener.getLogger().append("Trying to merge with revision '" + okRevision + "' which was fetched from Rietveld.\n");
+            listener.getLogger().append("Which should be in repo '" + featureRepoUrl + "', which we will pull.\n");
+
             amm.pull(featureRepoUrl);
             amm.update(targetBranch);
             amm.mergeWorkspaceWith(okRevision);
         }
 
-        if (!runNormalMerge) {  // We check twice, so on failure we should be able to resume normally (not in use atm.)
+        if (runNormalMerge) {  // We check twice, so on failure we should be able to resume normally (not in use atm.)
             amm.pull();
             amm.update(targetBranch);
             amm.mergeWorkspaceWith(featureBranch);
