@@ -30,15 +30,15 @@ import java.util.logging.Level;
 
 
 /**
- * Main extension of the GatekeeperPlugin. Does Gatekeepering.
+ * Main extension of the GatekeeperPlugin. Does Gatekeeper merge.
  */
 @Log
-public class GatekeeperPlugin extends Builder {
+public class GatekeeperMerge extends Builder {
 
     @Getter private final boolean doGatekeeping;
 
     @DataBoundConstructor
-    public GatekeeperPlugin(boolean doGatekeeping) {
+    public GatekeeperMerge(boolean doGatekeeping) {
         this.doGatekeeping = doGatekeeping;
     }
 
@@ -46,12 +46,12 @@ public class GatekeeperPlugin extends Builder {
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         PrintStream l = listener.getLogger();
         l.println("----------------------------------------------------------");
-        l.println("------------------- Now Gatekeepering --------------------");
+        l.println("------------------- Gatekeeper merge -----------------------");
         l.println("----------------------------------------------------------");
         try {
             return this.doPerform(build, launcher, listener);
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Exception during Gatekeeepring.", e);
+            log.log(Level.SEVERE, "Exception during Gatekeeep merge.", e);
             l.append("Exception occured, build aborting...");
             l.append(e.toString());
             return false;
@@ -62,15 +62,22 @@ public class GatekeeperPlugin extends Builder {
         /* Set up enviroment and resolve some variables. */
         EnvVars envVars = build.getEnvironment(listener);
         String givenCaseId = Util.replaceMacro("$CASE_ID", envVars);
+        String featureBranch = envVars.get("FEATURE_BRANCH", "");
+        String targetBranch = envVars.get("TARGET_BRANCH", "");
+        String repo_path = envVars.get("REPO_PATH", "");
         int usableCaseId = Integer.parseInt(givenCaseId);
 
         AdvancedMercurialManager amm = new AdvancedMercurialManager(build, launcher, listener);
 
-        /* Fetch branch information from Fogbugz */
-        FogbugzCase fallbackCase = new FogbugzNotifier().getFogbugzCaseManager().getCaseById(usableCaseId);
-        String repo_path = fallbackCase.getFeatureBranch().split("#")[0];
-        String featureBranch = fallbackCase.getFeatureBranch().split("#")[1];
-        String targetBranch = fallbackCase.getTargetBranch();
+        if (repo_path == "" | targetBranch == "" | featureBranch == "") {
+            /* Fetch branch information from Fogbugz */
+            FogbugzCase fallbackCase = new FogbugzNotifier().getFogbugzCaseManager().getCaseById(usableCaseId);
+            repo_path = fallbackCase.getFeatureBranch().split("#")[0];
+            featureBranch = fallbackCase.getFeatureBranch().split("#")[1];
+            envVars.override("FEATURE_BRANCH", featureBranch);
+            targetBranch = fallbackCase.getTargetBranch();
+            envVars.override("TARGET_BRANCH", targetBranch);
+        }
 
         /* Actual Gatekeepering logic. Seperated to work differently when Rietveld support is active. */
         boolean runNormalMerge = this.getDescriptor().getUrl().isEmpty();
@@ -105,24 +112,12 @@ public class GatekeeperPlugin extends Builder {
             amm.update(targetBranch);
             amm.mergeWorkspaceWith(okRevision);
         }
-
-        if (runNormalMerge) {  // We check twice, so on failure we should be able to resume normally (not in use atm.)
+        else {
             amm.pull();
             amm.update(targetBranch);
             amm.mergeWorkspaceWith(featureBranch);
         }
 
-
-        amm.commit("[Jenkins Integration Merge] Merge " + targetBranch + " with " + featureBranch);
-
-        /* Set the featureBranch we merged with in redis to other plugin know this was actually the build's branch */
-        RedisProvider redisProvider = new RedisProvider();
-        Jedis redis = redisProvider.getConnection();
-        redis.set("old_" + build.getExternalizableId(), featureBranch);
-
-        /* Add commit to list of things to push. */
-        redis.rpush("topush_" + build.getExternalizableId(), targetBranch);
-        redisProvider.returnConnection(redis);
         return true;
     }
 
@@ -176,7 +171,7 @@ public class GatekeeperPlugin extends Builder {
 
         @Override
         public String getDisplayName() {
-            return "Perform Gatekeerping.";
+            return "Perform Gatekeeper merge.";
         }
 
         public DescriptorImpl() {
