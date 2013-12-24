@@ -11,12 +11,9 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import lombok.Getter;
 import lombok.extern.java.Log;
-import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
 import org.paylogic.jenkins.advancedmercurial.AdvancedMercurialManager;
-import org.paylogic.redis.RedisProvider;
-import redis.clients.jedis.Jedis;
+import org.paylogic.jenkins.fogbugz.LogMessageSearcher;
 
 import java.io.PrintStream;
 import java.util.logging.Level;
@@ -46,8 +43,8 @@ public class GatekeeperCommit extends Builder {
             return this.doPerform(build, launcher, listener);
         } catch (Exception e) {
             log.log(Level.SEVERE, "Exception during Gatekeeeper commit.", e);
-            l.append("Exception occured, build aborting...");
-            l.append(e.toString());
+            l.append("Exception occured, build aborting...\n");
+            LogMessageSearcher.logMessage(listener, e.toString());
             return false;
         }
     }
@@ -61,19 +58,12 @@ public class GatekeeperCommit extends Builder {
         AdvancedMercurialManager amm = new AdvancedMercurialManager(build, launcher, listener);
         amm.commit("[Jenkins Integration Merge] Merge " + targetBranch + " with " + featureBranch);
 
-        /* Set the featureBranch we merged with in redis to other plugin know this was actually the build's branch */
-        RedisProvider redisProvider = new RedisProvider();
-        Jedis redis = redisProvider.getConnection();
-        redis.set("old_" + build.getExternalizableId(), featureBranch);
-
-        /* Add commit to list of things to push. */
-        redis.rpush("topush_" + build.getExternalizableId(), targetBranch);
-        redisProvider.returnConnection(redis);
+        LogMessageSearcher.logMessage(listener, "Gatekeeper merge was commited, because tests seem to be successful.");
         return true;
     }
 
 
-        @Override
+    @Override
     public DescriptorImpl getDescriptor() {
         return (DescriptorImpl)super.getDescriptor();
     }

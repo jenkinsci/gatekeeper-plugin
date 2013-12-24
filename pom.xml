@@ -8,7 +8,7 @@
 
   <groupId>org.paylogic</groupId>
   <artifactId>GatekeeperPlugin</artifactId>
-  <version>1.1.8</version>
+  <version>1.2.1</version>
   <packaging>hpi</packaging>
 
     <build>
@@ -34,12 +34,12 @@
         <dependency>
             <groupId>org.paylogic</groupId>
             <artifactId>Fogbugz</artifactId>
-            <version>1.1.5</version>
+            <version>1.2.0</version>
         </dependency>
         <dependency>
             <groupId>org.paylogic</groupId>
             <artifactId>FogbugzPlugin</artifactId>
-            <version>1.1.5</version>
+            <version>1.2.1</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -49,13 +49,8 @@
         <dependency>
             <groupId>org.paylogic</groupId>
             <artifactId>AdvancedMercurial</artifactId>
-            <version>1.1.6</version>
+            <version>1.2.1</version>
         </dependency>
-        <dependency>
-          <groupId>org.paylogic</groupId>
-          <artifactId>redis</artifactId>
-          <version>1.1.4</version>
-       </dependency>
     </dependencies>
 
     <repositories>

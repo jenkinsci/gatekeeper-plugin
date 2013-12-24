@@ -17,11 +17,10 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.paylogic.fogbugz.FogbugzCase;
 import org.paylogic.jenkins.advancedmercurial.AdvancedMercurialManager;
+import org.paylogic.jenkins.advancedmercurial.exceptions.MercurialMergeConflictException;
 import org.paylogic.jenkins.fogbugz.FogbugzNotifier;
-import org.paylogic.redis.RedisProvider;
-import redis.clients.jedis.Jedis;
+import org.paylogic.jenkins.fogbugz.LogMessageSearcher;
 
-import javax.swing.text.html.HTML;
 import java.io.PrintStream;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
@@ -50,10 +49,17 @@ public class GatekeeperMerge extends Builder {
         l.println("----------------------------------------------------------");
         try {
             return this.doPerform(build, launcher, listener);
+        } catch (MercurialMergeConflictException e) {
+            log.log(Level.SEVERE, "Exception during Gatekeeeper merge.", e);
+            l.append("Exception occured, build aborting...\n");
+            LogMessageSearcher.logMessage(listener, "Merge conflict occured when Gatekeeper merging, " +
+                    "please check the Jenkins buildlog for conflicting files, resolve them, " +
+                    "and reassign this case to Mergekeepers.");
+            return false;
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Exception during Gatekeeep merge.", e);
-            l.append("Exception occured, build aborting...");
-            l.append(e.toString());
+            log.log(Level.SEVERE, "Exception during Gatekeeeper merge.", e);
+            l.append("Exception occured, build aborting...\n");
+            LogMessageSearcher.logMessage(listener, e.toString());
             return false;
         }
     }
@@ -93,9 +99,9 @@ public class GatekeeperMerge extends Builder {
                 listener.getLogger().append("Connected to: " + rietveldUrl + "\n");
 
                 if (con.getResponseCode() == 404) {
-                    listener.getLogger().append("Build was aborted because the case is not approved yet.\n");
+                    LogMessageSearcher.logMessage(listener, "Build was aborted because the case is not approved yet.");
                 } else if (con.getResponseCode() == 500) {
-                    listener.getLogger().append("Build was aborted because the case does not exist in CodeReview.\n");
+                    LogMessageSearcher.logMessage(listener, "Build was aborted because the case does not exist in CodeReview.");
                 }
 
                 throw new Exception("Error while fetching latest OK revision from Rietveld. Response code: " +
@@ -111,12 +117,18 @@ public class GatekeeperMerge extends Builder {
             amm.pull(featureRepoUrl);
             amm.update(targetBranch);
             amm.mergeWorkspaceWith(okRevision);
+
+            LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
+                    okRevision + " from " + featureRepoUrl + " to " + targetBranch + ".");
         }
         else {
             amm.pull();
             amm.update(targetBranch);
             amm.mergeWorkspaceWith(featureBranch);
+            LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
+                    featureBranch + " to " + targetBranch + ".");
         }
+
 
         return true;
     }
