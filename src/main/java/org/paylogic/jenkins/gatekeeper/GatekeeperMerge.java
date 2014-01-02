@@ -114,7 +114,7 @@ public class GatekeeperMerge extends Builder {
             listener.getLogger().append("Trying to merge with revision '" + okRevision + "' which was fetched from Rietveld.\n");
             listener.getLogger().append("Which should be in repo '" + featureRepoUrl + "', which we will pull.\n");
 
-            amm.pull(featureRepoUrl);
+            amm.pull(featureRepoUrl, featureBranch);
             amm.update(targetBranch);
             amm.mergeWorkspaceWith(okRevision);
 
@@ -122,7 +122,7 @@ public class GatekeeperMerge extends Builder {
                     okRevision + " from " + featureRepoUrl + " to " + targetBranch + ".");
         }
         else {
-            amm.pull();
+            amm.pull("", featureBranch);
             amm.update(targetBranch);
             amm.mergeWorkspaceWith(featureBranch);
             LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
