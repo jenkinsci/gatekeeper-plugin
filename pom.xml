@@ -34,22 +34,22 @@
         <dependency>
             <groupId>org.paylogic</groupId>
             <artifactId>Fogbugz</artifactId>
-            <version>1.2.0</version>
+            <version>[1.2.0,)</version>
         </dependency>
         <dependency>
             <groupId>org.paylogic</groupId>
             <artifactId>FogbugzPlugin</artifactId>
-            <version>1.2.1</version>
+            <version>[1.2.1,)</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <version>1.12.2</version>
+            <version>[1.12.2,)</version>
         </dependency>
         <dependency>
             <groupId>org.paylogic</groupId>
             <artifactId>AdvancedMercurial</artifactId>
-            <version>1.2.1</version>
+            <version>[1.2.1,)</version>
         </dependency>
     </dependencies>
 
