@@ -3,18 +3,18 @@ package org.paylogic.jenkins.gatekeeper;
 import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.Extension;
-import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.model.AbstractProject;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
-import lombok.Getter;
 import lombok.extern.java.Log;
 import net.sf.json.JSONObject;
 import org.apache.commons.io.IOUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
+import org.jenkinsci.plugins.envinject.EnvInjectBuilderContributionAction;
+
 import org.paylogic.fogbugz.FogbugzCase;
 import org.paylogic.jenkins.advancedmercurial.AdvancedMercurialManager;
 import org.paylogic.jenkins.advancedmercurial.exceptions.MercurialMergeConflictException;
@@ -34,11 +34,8 @@ import java.util.logging.Level;
 @Log
 public class GatekeeperMerge extends Builder {
 
-    @Getter private final boolean doGatekeeping;
-
     @DataBoundConstructor
-    public GatekeeperMerge(boolean doGatekeeping) {
-        this.doGatekeeping = doGatekeeping;
+    public GatekeeperMerge() {
     }
 
     @Override
@@ -67,23 +64,31 @@ public class GatekeeperMerge extends Builder {
     private boolean doPerform(AbstractBuild build, Launcher launcher, BuildListener listener) throws Exception {
         /* Set up enviroment and resolve some variables. */
         EnvVars envVars = build.getEnvironment(listener);
-        String givenCaseId = Util.replaceMacro("$CASE_ID", envVars);
         String featureBranch = envVars.get("FEATURE_BRANCH", "");
         String targetBranch = envVars.get("TARGET_BRANCH", "");
+        int usableCaseId = 0;
+        String givenCaseId = envVars.get("CASE_ID", "");
+        if (givenCaseId != "") {
+            usableCaseId = Integer.parseInt(givenCaseId);
+        }
+
         String repo_path = envVars.get("REPO_PATH", "");
-        int usableCaseId = Integer.parseInt(givenCaseId);
 
-        AdvancedMercurialManager amm = new AdvancedMercurialManager(build, launcher, listener);
-
-        if (repo_path == "" | targetBranch == "" | featureBranch == "") {
+        if (targetBranch == "" | featureBranch == "") {
             /* Fetch branch information from Fogbugz */
             FogbugzCase fallbackCase = new FogbugzNotifier().getFogbugzCaseManager().getCaseById(usableCaseId);
             repo_path = fallbackCase.getFeatureBranch().split("#")[0];
             featureBranch = fallbackCase.getFeatureBranch().split("#")[1];
-            envVars.override("FEATURE_BRANCH", featureBranch);
             targetBranch = fallbackCase.getTargetBranch();
+            envVars.override("FEATURE_BRANCH", featureBranch);
             envVars.override("TARGET_BRANCH", targetBranch);
+            //Set the new build variables map
+            build.addAction(new EnvInjectBuilderContributionAction(envVars));
         }
+
+        AdvancedMercurialManager amm = new AdvancedMercurialManager(build, launcher, listener);
+
+        amm.stripLocal();
 
         /* Actual Gatekeepering logic. Seperated to work differently when Rietveld support is active. */
         boolean runNormalMerge = this.getDescriptor().getUrl().isEmpty();
@@ -113,9 +118,9 @@ public class GatekeeperMerge extends Builder {
             String okRevision = sw.toString().replace("\n", "");
             listener.getLogger().append("Trying to merge with revision '" + okRevision + "' which was fetched from Rietveld.\n");
             listener.getLogger().append("Which should be in repo '" + featureRepoUrl + "', which we will pull.\n");
-
             amm.pull(featureRepoUrl, featureBranch);
-            amm.update(targetBranch);
+            amm.updateClean(targetBranch);
+            amm.clean();
             amm.mergeWorkspaceWith(okRevision);
 
             LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
