@@ -8,7 +8,7 @@
 
   <groupId>org.paylogic</groupId>
   <artifactId>GatekeeperPlugin</artifactId>
-  <version>1.2.6</version>
+  <version>1.2.9</version>
   <packaging>hpi</packaging>
 
     <build>

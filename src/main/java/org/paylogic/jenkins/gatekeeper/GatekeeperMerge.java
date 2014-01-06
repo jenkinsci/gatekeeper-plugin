@@ -26,6 +26,8 @@ import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -33,6 +35,13 @@ import java.util.logging.Level;
  */
 @Log
 public class GatekeeperMerge extends Builder {
+
+    /**
+     * This expression derived/taken from the BNF for URI (RFC2396).
+     * Validates URLs
+     */
+    private static final String URL_REGEX = "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?";
+    private static final Pattern URL_PATTERN = Pattern.compile(URL_REGEX);
 
     @DataBoundConstructor
     public GatekeeperMerge() {
@@ -42,7 +51,7 @@ public class GatekeeperMerge extends Builder {
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         PrintStream l = listener.getLogger();
         l.println("----------------------------------------------------------");
-        l.println("------------------- Gatekeeper merge -----------------------");
+        l.println("------------------- Gatekeeper merge ---------------------");
         l.println("----------------------------------------------------------");
         try {
             return this.doPerform(build, launcher, listener);
@@ -74,7 +83,7 @@ public class GatekeeperMerge extends Builder {
 
         String repo_path = envVars.get("REPO_PATH", "");
 
-        if (targetBranch == "" | featureBranch == "") {
+        if (targetBranch.isEmpty() | featureBranch.isEmpty()) {
             /* Fetch branch information from Fogbugz */
             FogbugzCase fallbackCase = new FogbugzNotifier().getFogbugzCaseManager().getCaseById(usableCaseId);
             repo_path = fallbackCase.getFeatureBranch().split("#")[0];
@@ -82,7 +91,7 @@ public class GatekeeperMerge extends Builder {
             targetBranch = fallbackCase.getTargetBranch();
             envVars.override("FEATURE_BRANCH", featureBranch);
             envVars.override("TARGET_BRANCH", targetBranch);
-            //Set the new build variables map
+            // Set the new build variables map
             build.addAction(new EnvInjectBuilderContributionAction(envVars));
         }
 
@@ -92,10 +101,45 @@ public class GatekeeperMerge extends Builder {
 
         /* Actual Gatekeepering logic. Seperated to work differently when Rietveld support is active. */
         boolean runNormalMerge = this.getDescriptor().getUrl().isEmpty();
-        if (!runNormalMerge) {
-            // Use Rietveld support.
-            String featureRepoUrl = this.getDescriptor().getRepoBase() + repo_path;  // Should produce correct url.
+        if (!runNormalMerge) { // Use Rietveld support.
 
+            String repoBase = this.getDescriptor().getRepoBase();
+            Matcher baseUrlMatcher = URL_PATTERN.matcher(repoBase);
+            Matcher repoUrlMatcher = URL_PATTERN.matcher(repo_path);
+            String featureRepoUrl;
+
+            // We seem to need to call these, otherwise 'group' method will not work.
+            baseUrlMatcher.matches();
+            repoUrlMatcher.matches();
+
+            /* Logic for recognizing different formats or repository URLs */
+            if (repoUrlMatcher.group(1) != null) {
+                // If repo_path contains startswith one of: ssh:// http:// https://, we assume user put in full path and use that.
+                featureRepoUrl = repo_path;
+
+            } else if (repoUrlMatcher.group(5).contains(baseUrlMatcher.group(5).substring(1, baseUrlMatcher.group(5).length()))) {
+                // if repo_path contains part of repoBase, this is probably in format /var/hg/repo#123, so we fix that.
+                // strips first char from baseUrl group 5, which makes //var/hg /var/hg, or /var/hg var/hg, which makes the if match like we want.
+                featureRepoUrl = baseUrlMatcher.group(1) + baseUrlMatcher.group(3);
+                // If protocol is ssh, add extra /
+                if (baseUrlMatcher.group(2).equals("ssh")) {
+                    featureRepoUrl += "/";
+                }
+                featureRepoUrl += repo_path;
+
+            } else {
+                // else we construct path with base from settings. format probably is users/repo#123 or repo#123, so that works.
+                featureRepoUrl = this.getDescriptor().getRepoBase() + repo_path;
+            }
+
+            // We test if the resulting URL is a valid one, if not, something went wrong and we quit.
+            if (!featureRepoUrl.matches(URL_REGEX)) {
+                throw new Exception("Error while constructing valid repository URL, we came up with " + featureRepoUrl);
+            }
+
+            log.log(Level.INFO, "Pulling from repository at: " + featureRepoUrl);
+
+            /* Fetch latest OK revision from rietveld. */
             String rietveldUrl = this.getDescriptor().getUrl() + "/get_latest_ok_for_case/" + Integer.toString(usableCaseId)  + "/";
             URL uri = new URL(rietveldUrl);
             HttpURLConnection con = (HttpURLConnection) uri.openConnection();
@@ -118,6 +162,8 @@ public class GatekeeperMerge extends Builder {
             String okRevision = sw.toString().replace("\n", "");
             listener.getLogger().append("Trying to merge with revision '" + okRevision + "' which was fetched from Rietveld.\n");
             listener.getLogger().append("Which should be in repo '" + featureRepoUrl + "', which we will pull.\n");
+
+            /* Actual gatekeepering commands. Invokes mercurial exe */
             amm.pull(featureRepoUrl, featureBranch);
             amm.updateClean(targetBranch);
             amm.clean();
@@ -125,15 +171,13 @@ public class GatekeeperMerge extends Builder {
 
             LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
                     okRevision + " from " + featureRepoUrl + " to " + targetBranch + ".");
-        }
-        else {
+        } else {
             amm.pull("", featureBranch);
             amm.update(targetBranch);
             amm.mergeWorkspaceWith(featureBranch);
             LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
                     featureBranch + " to " + targetBranch + ".");
         }
-
 
         return true;
     }
