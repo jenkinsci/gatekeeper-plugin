@@ -8,7 +8,7 @@
 
   <groupId>org.paylogic</groupId>
   <artifactId>GatekeeperPlugin</artifactId>
-  <version>1.2.9</version>
+  <version>1.4.0</version>
   <packaging>hpi</packaging>
 
     <build>
@@ -39,22 +39,17 @@
         <dependency>
             <groupId>org.paylogic</groupId>
             <artifactId>Fogbugz</artifactId>
-            <version>[1.2.0,)</version>
+            <version>[2.0.0,)</version>
         </dependency>
         <dependency>
-            <groupId>org.paylogic</groupId>
-            <artifactId>FogbugzPlugin</artifactId>
-            <version>[1.2.2,)</version>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>fogbugz</artifactId>
+            <version>[2.0,)</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
             <version>[1.12.2,)</version>
-        </dependency>
-        <dependency>
-            <groupId>org.paylogic</groupId>
-            <artifactId>AdvancedMercurial</artifactId>
-            <version>[1.2.9,)</version>
         </dependency>
     </dependencies>
 

@@ -10,7 +10,7 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import lombok.extern.java.Log;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.paylogic.jenkins.advancedmercurial.AdvancedMercurialManager;
+import org.paylogic.jenkins.advancedmercurial.advancedmercurial.AdvancedMercurialManager;
 import org.paylogic.jenkins.fogbugz.LogMessageSearcher;
 
 import java.io.PrintStream;

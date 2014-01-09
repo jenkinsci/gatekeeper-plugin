@@ -16,8 +16,8 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.jenkinsci.plugins.envinject.EnvInjectBuilderContributionAction;
 
 import org.paylogic.fogbugz.FogbugzCase;
-import org.paylogic.jenkins.advancedmercurial.AdvancedMercurialManager;
-import org.paylogic.jenkins.advancedmercurial.exceptions.MercurialMergeConflictException;
+import org.paylogic.jenkins.advancedmercurial.advancedmercurial.AdvancedMercurialManager;
+import org.paylogic.jenkins.advancedmercurial.advancedmercurial.exceptions.MercurialMergeConflictException;
 import org.paylogic.jenkins.fogbugz.FogbugzNotifier;
 import org.paylogic.jenkins.fogbugz.LogMessageSearcher;
 
