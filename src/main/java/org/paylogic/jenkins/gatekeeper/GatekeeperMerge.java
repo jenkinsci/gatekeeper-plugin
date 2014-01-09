@@ -85,7 +85,7 @@ public class GatekeeperMerge extends Builder {
 
         if (targetBranch.isEmpty() | featureBranch.isEmpty()) {
             /* Fetch branch information from Fogbugz */
-            FogbugzCase fallbackCase = new FogbugzNotifier().getFogbugzCaseManager().getCaseById(usableCaseId);
+            FogbugzCase fallbackCase = new FogbugzNotifier().getFogbugzManager().getCaseById(usableCaseId);
             repo_path = fallbackCase.getFeatureBranch().split("#")[0];
             featureBranch = fallbackCase.getFeatureBranch().split("#")[1];
             targetBranch = fallbackCase.getTargetBranch();
