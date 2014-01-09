@@ -250,6 +250,34 @@ public class AdvancedMercurialManager {
     }
 
     /**
+     * Merge possible current branch's heads.
+     * @return String : Output of merge command (should be empty if all went well)
+     */
+    public String merge() throws Exception {
+        String output = "";
+        try {
+            output = this.advancedHgExe.merge("");
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Exception occured during merge of the heads.", e);
+            l.append(e.toString());
+
+            if (output.contains("conflicts during merge") || e.toString().contains("conflicts during merge")) {
+                log.log(Level.INFO, "Throwing MercurialMergeConflictException.");
+                throw new MercurialMergeConflictException(output);
+            } else {
+                throw e;
+            }
+        }
+
+        if (output.contains("abort: merging") && output.contains("has no effect")) {
+            throw new MergeWontHaveEffectException(output);
+        }
+
+        return output;
+    }
+
+
+    /**
      * Update workspace to 'updateTo' and then merge that workspace with 'revision'.
      * Executes hg update <updateTo> && hg merge <revision>.
      * Do not forget to commit merge afterwards manually.
