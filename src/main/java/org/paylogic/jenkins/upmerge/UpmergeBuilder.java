@@ -9,7 +9,6 @@ import hudson.tasks.BuildStepDescriptor;
 import jenkins.model.Jenkins;
 import jenkins.plugins.fogbugz.notifications.FogbugzNotifier;
 import jenkins.plugins.fogbugz.notifications.LogMessageSearcher;
-import lombok.Getter;
 import lombok.extern.java.Log;
 import net.sf.json.JSONObject;
 import org.jenkinsci.plugins.envinject.EnvInjectBuilderContributionAction;
@@ -17,6 +16,8 @@ import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.paylogic.fogbugz.FogbugzCase;
 import org.paylogic.jenkins.advancedmercurial.AdvancedMercurialManager;
+import org.paylogic.jenkins.upmerge.releasebranch.ReleaseBranch;
+import org.paylogic.jenkins.upmerge.releasebranch.ReleaseBranchImpl;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -30,12 +31,8 @@ import java.util.logging.Level;
 @Log
 public class UpmergeBuilder extends Builder {
 
-    @Getter
-    private final boolean run_always;
-
     @DataBoundConstructor
-    public UpmergeBuilder(boolean run_always) {
-        this.run_always = run_always;
+    public UpmergeBuilder() {
     }
 
     /**
