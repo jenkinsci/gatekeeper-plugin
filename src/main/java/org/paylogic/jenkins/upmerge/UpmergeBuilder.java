@@ -20,9 +20,7 @@ import org.paylogic.jenkins.upmerge.releasebranch.ReleaseBranch;
 import org.paylogic.jenkins.upmerge.releasebranch.ReleaseBranchImpl;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Level;
 
 /**
@@ -94,17 +92,10 @@ public class UpmergeBuilder extends Builder {
 
         /* Get branch name using AdvancedMercurialManager, which we'll need later on as well. */
         AdvancedMercurialManager amm = new AdvancedMercurialManager(build, launcher, listener);
-        String branchName = amm.getBranch();
-        Map buildVariables = build.getBuildVariables();
-
 
         /* Get a ReleaseBranch compatible object to bump release branch versions with. */
         /* TODO: resolve user ReleaseBranchImpl of choice here, learn Java Generics first ;) */
         ReleaseBranch releaseBranch = new ReleaseBranchImpl(targetBranch);
-
-        /* Prepare points to push merge results to, so we can tell the dev what we upmerged */
-        List<String> branchesToPush = new ArrayList<String>();
-        branchesToPush.add(releaseBranch.getName());
 
         /*
          Do actual upmerging in this loop, until we can't upmerge no more.
@@ -113,6 +104,10 @@ public class UpmergeBuilder extends Builder {
 
         // Pull to also get new releases created during tests.
         amm.pull();
+        amm.update("");
+        amm.merge();
+        amm.commit("[Jenkins Upmerging] Merged heads on " + releaseBranch.getName(), commitUsername);
+
         List<String> branchList = amm.getBranchNames();
         String latestBranchToPush, releaseBranchName;
         latestBranchToPush = releaseBranchName = releaseBranch.getName();
@@ -121,8 +116,6 @@ public class UpmergeBuilder extends Builder {
         String nextBranchName = nextBranch.getName();
         while(nextBranchName != releaseBranchName) {
             amm.update(nextBranchName);
-            amm.merge();
-            amm.commit("[Jenkins Upmerging] Merged heads on " + nextBranchName, commitUsername);
             amm.mergeWorkspaceWith(releaseBranchName);
             amm.commit(
                     "[Jenkins Upmerging] Merged " + nextBranchName + " with " + releaseBranchName,
