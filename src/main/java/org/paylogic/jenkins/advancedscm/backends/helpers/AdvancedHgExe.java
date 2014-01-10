@@ -1,4 +1,4 @@
-package org.paylogic.jenkins.advancedmercurial;
+package org.paylogic.jenkins.advancedscm.backends.helpers;
 
 import hudson.AbortException;
 import hudson.FilePath;

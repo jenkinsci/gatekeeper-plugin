@@ -6,7 +6,6 @@ import hudson.model.BuildListener;
 import hudson.model.AbstractProject;
 import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
-import jenkins.model.Jenkins;
 import jenkins.plugins.fogbugz.notifications.FogbugzNotifier;
 import jenkins.plugins.fogbugz.notifications.LogMessageSearcher;
 import lombok.extern.java.Log;
@@ -15,7 +14,8 @@ import org.jenkinsci.plugins.envinject.EnvInjectBuilderContributionAction;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.paylogic.fogbugz.FogbugzCase;
-import org.paylogic.jenkins.advancedmercurial.AdvancedMercurialManager;
+import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
+import org.paylogic.jenkins.advancedscm.SCMManagerFactory;
 import org.paylogic.jenkins.upmerge.releasebranch.ReleaseBranch;
 import org.paylogic.jenkins.upmerge.releasebranch.ReleaseBranchImpl;
 
@@ -90,8 +90,8 @@ public class UpmergeBuilder extends Builder {
             build.addAction(new EnvInjectBuilderContributionAction(envVars));
         }
 
-        /* Get branch name using AdvancedMercurialManager, which we'll need later on as well. */
-        AdvancedMercurialManager amm = new AdvancedMercurialManager(build, launcher, listener);
+        /* Get branch name using MercurialBackend, which we'll need later on as well. */
+        AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
 
         /* Get a ReleaseBranch compatible object to bump release branch versions with. */
         /* TODO: resolve user ReleaseBranchImpl of choice here, learn Java Generics first ;) */
@@ -151,15 +151,6 @@ public class UpmergeBuilder extends Builder {
 
         public DescriptorImpl() throws Exception {
             super();
-            Plugin fbPlugin = Jenkins.getInstance().getPlugin("FogbugzPlugin");
-            if (fbPlugin == null) {
-                throw new Exception("You need the 'FogbugzPlugin' installed in order to use 'UpmergePlugin'");
-            }
-
-            Plugin hgPlugin = Jenkins.getInstance().getPlugin("mercurial");
-            if (hgPlugin == null) {
-                throw new Exception("You need the 'mercurial' plugin installed in order to use 'UpmergePlugin'");
-            }
             load();
         }
 

@@ -16,8 +16,9 @@ import org.kohsuke.stapler.StaplerRequest;
 import org.jenkinsci.plugins.envinject.EnvInjectBuilderContributionAction;
 
 import org.paylogic.fogbugz.FogbugzCase;
-import org.paylogic.jenkins.advancedmercurial.AdvancedMercurialManager;
-import org.paylogic.jenkins.advancedmercurial.exceptions.MercurialMergeConflictException;
+import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
+import org.paylogic.jenkins.advancedscm.SCMManagerFactory;
+import org.paylogic.jenkins.advancedscm.exceptions.MergeConflictException;
 import jenkins.plugins.fogbugz.notifications.FogbugzNotifier;
 import jenkins.plugins.fogbugz.notifications.LogMessageSearcher;
 
@@ -55,7 +56,7 @@ public class GatekeeperMerge extends Builder {
         l.println("----------------------------------------------------------");
         try {
             return this.doPerform(build, launcher, listener);
-        } catch (MercurialMergeConflictException e) {
+        } catch (MergeConflictException e) {
             log.log(Level.SEVERE, "Exception during Gatekeeeper merge.", e);
             l.append("Exception occured, build aborting...\n");
             LogMessageSearcher.logMessage(listener, "Merge conflict occured when Gatekeeper merging, " +
@@ -95,7 +96,7 @@ public class GatekeeperMerge extends Builder {
             build.addAction(new EnvInjectBuilderContributionAction(envVars));
         }
 
-        AdvancedMercurialManager amm = new AdvancedMercurialManager(build, launcher, listener);
+        AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
 
         amm.stripLocal();
 
