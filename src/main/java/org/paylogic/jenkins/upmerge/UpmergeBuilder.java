@@ -151,15 +151,6 @@ public class UpmergeBuilder extends Builder {
 
         public DescriptorImpl() throws Exception {
             super();
-            Plugin fbPlugin = Jenkins.getInstance().getPlugin("FogbugzPlugin");
-            if (fbPlugin == null) {
-                throw new Exception("You need the 'FogbugzPlugin' installed in order to use 'UpmergePlugin'");
-            }
-
-            Plugin hgPlugin = Jenkins.getInstance().getPlugin("mercurial");
-            if (hgPlugin == null) {
-                throw new Exception("You need the 'mercurial' plugin installed in order to use 'UpmergePlugin'");
-            }
             load();
         }
 
