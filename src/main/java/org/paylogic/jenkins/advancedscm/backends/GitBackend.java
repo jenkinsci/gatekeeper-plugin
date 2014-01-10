@@ -18,11 +18,13 @@ public class GitBackend implements AdvancedSCMManager {
     private final BuildListener listener;
     private final GitSCM scm;
 
-    public GitBackend(AbstractBuild build, Launcher launcher, BuildListener listener, GitSCM scm) {
+    public GitBackend(AbstractBuild build, Launcher launcher, BuildListener listener, GitSCM scm) throws Exception {
         this.build = build;
         this.launcher = launcher;
         this.listener = listener;
         this.scm = scm;
+        // TODO: implement git support
+        throw new Exception("Git support is currently not implemented.");
     }
     /**
      * Get Mercurial branches from command line output,

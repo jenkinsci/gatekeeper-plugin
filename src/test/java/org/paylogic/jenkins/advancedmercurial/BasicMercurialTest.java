@@ -72,7 +72,7 @@ public class BasicMercurialTest {
         FreeStyleProject p = j.createFreeStyleProject();
         ArrayList<SCM> scmList = new ArrayList<SCM>();
         scmList.add(new MercurialSCM(null, repo.getPath(), "tip", null, null, null, false));
-        scmList.add(new MercurialSCM(null, repo.getPath(), "tip", null, "src/asdf", null, false));
+        scmList.add(new MercurialSCM(null, repo2.getPath(), "tip", null, "src/asdf", null, false));
 
         p.setScm(new MultiSCM(scmList));
 
@@ -81,10 +81,13 @@ public class BasicMercurialTest {
 
         // Init repo with release and feature branch.
         m.hg(repo, "init");
-        m.hg(repo, "branch", "r1336");
-        m.touchAndCommit(repo, "r1336");
-        m.hg(repo, "branch", "c3");
-        m.touchAndCommit(repo, "c3");
+        m.touchAndCommit(repo, "dummy");
+
+        m.hg(repo2, "init");
+        m.hg(repo2, "branch", "r1336");
+        m.touchAndCommit(repo2, "r1336");
+        m.hg(repo2, "branch", "c3");
+        m.touchAndCommit(repo2, "c3");
 
         // Custom builder that merges feature branch with release branch using AdvancedSCMManager.
         p.getBuildersList().add(new TestBuilder() {

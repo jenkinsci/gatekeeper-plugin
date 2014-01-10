@@ -11,6 +11,7 @@ import org.jenkinsci.plugins.multiplescms.MultiSCM;
 import org.paylogic.jenkins.advancedscm.backends.GitBackend;
 import org.paylogic.jenkins.advancedscm.backends.MercurialBackend;
 
+import java.io.PrintStream;
 import java.util.List;
 
 /**
@@ -22,6 +23,7 @@ import java.util.List;
 public class SCMManagerFactory {
     public static AdvancedSCMManager getManager(AbstractBuild build, Launcher launcher, BuildListener listener) throws Exception {
         String givenRepoSubdir = null;
+        PrintStream l = listener.getLogger();
         givenRepoSubdir = build.getEnvironment(listener).get("REPO_SUBDIR", "");
         SCM scm = build.getProject().getScm();
 
@@ -36,6 +38,7 @@ public class SCMManagerFactory {
                         String subDir = ((MercurialSCM) s).getSubdir();
                         if (subDir != null) {
                             if (subDir.equals(givenRepoSubdir)) {
+                                l.append("Chosen MultiSCM with Mercurial Backend");
                                 return new MercurialBackend(build, launcher, listener, (MercurialSCM) s);
                             }
                         }
@@ -43,6 +46,7 @@ public class SCMManagerFactory {
                         String subDir = ((GitSCM) s).getRelativeTargetDir(); // TODO: non-deprecated version
                         if (subDir != null) {
                             if (subDir.equals(givenRepoSubdir)) {
+                                l.append("Chosen MutliSCM with Git Backend");
                                 return new GitBackend(build, launcher, listener, (GitSCM) s);
                             }
                         }
@@ -55,8 +59,10 @@ public class SCMManagerFactory {
 
         // No multiscm, just return correct backend.
         if (scm instanceof MercurialSCM) {
+            l.append("Chosen Mercurial backend, NO MultiSCM");
             return new MercurialBackend(build, launcher, listener, (MercurialSCM) scm);
         } else if (scm instanceof GitSCM) {
+            l.append("Chosen Git backend, NO MultiSCM");
             return new GitBackend(build, launcher, listener, (GitSCM) scm);
         }
 
