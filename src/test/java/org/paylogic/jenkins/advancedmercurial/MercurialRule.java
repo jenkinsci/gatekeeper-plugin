@@ -125,4 +125,8 @@ public final class MercurialRule extends ExternalResource {
         return hgExe().popen(new FilePath(repo), listener, false, new ArgumentListBuilder("log", "-l1", "--template", "{node}"));
     }
 
+    public String searchLog(File repo, String query) throws Exception {
+        return hgExe().popen(new FilePath(repo), listener, false, new ArgumentListBuilder("log", "-k", query));
+    }
+
 }
