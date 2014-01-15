@@ -10,8 +10,8 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import lombok.extern.java.Log;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.paylogic.jenkins.LogMessageSearcher;
 import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
-import jenkins.plugins.fogbugz.notifications.LogMessageSearcher;
 import org.paylogic.jenkins.advancedscm.SCMManagerFactory;
 
 import java.io.PrintStream;

@@ -29,12 +29,12 @@ import java.util.TreeSet;
 
 import static org.junit.Assert.*;
 
-import jenkins.plugins.fogbugz.jobtrigger.FogbugzBuildCause;
 import org.junit.Assume;
 import org.junit.internal.AssumptionViolatedException;
 import org.junit.rules.ExternalResource;
 
 import org.jvnet.hudson.test.JenkinsRule;
+import org.paylogic.jenkins.ABuildCause;
 
 public final class MercurialRule extends ExternalResource {
 
@@ -99,7 +99,7 @@ public final class MercurialRule extends ExternalResource {
 
     public String buildAndCheck(FreeStyleProject p, String name,
             Action... actions) throws Exception {
-        FreeStyleBuild b = j.assertBuildStatusSuccess(p.scheduleBuild2(0, new FogbugzBuildCause(), actions).get()); // Somehow this needs a cause or it will fail
+        FreeStyleBuild b = j.assertBuildStatusSuccess(p.scheduleBuild2(0, new ABuildCause(), actions).get()); // Somehow this needs a cause or it will fail
         // for (String line : b.getLog(Integer.MAX_VALUE)) {
         // System.err.println(">> " + line);
         // }

@@ -10,25 +10,16 @@ import hudson.tasks.Builder;
 import hudson.tasks.BuildStepDescriptor;
 import lombok.extern.java.Log;
 import net.sf.json.JSONObject;
-import org.apache.commons.io.IOUtils;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
-import org.jenkinsci.plugins.envinject.EnvInjectBuilderContributionAction;
 
-import org.paylogic.fogbugz.FogbugzCase;
+import org.paylogic.jenkins.LogMessageSearcher;
 import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
 import org.paylogic.jenkins.advancedscm.SCMManagerFactory;
 import org.paylogic.jenkins.advancedscm.exceptions.MergeConflictException;
-import jenkins.plugins.fogbugz.notifications.FogbugzNotifier;
-import jenkins.plugins.fogbugz.notifications.LogMessageSearcher;
 
 import java.io.PrintStream;
-import java.io.StringWriter;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.logging.Level;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 /**
@@ -36,13 +27,6 @@ import java.util.regex.Pattern;
  */
 @Log
 public class GatekeeperMerge extends Builder {
-
-    /**
-     * This expression derived/taken from the BNF for URI (RFC2396).
-     * Validates URLs
-     */
-    private static final String URL_REGEX = "^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\\?([^#]*))?(#(.*))?";
-    private static final Pattern URL_PATTERN = Pattern.compile(URL_REGEX);
 
     @DataBoundConstructor
     public GatekeeperMerge() {
@@ -76,92 +60,19 @@ public class GatekeeperMerge extends Builder {
         EnvVars envVars = build.getEnvironment(listener);
         String featureBranch = envVars.get("FEATURE_BRANCH", "");
         String targetBranch = envVars.get("TARGET_BRANCH", "");
+        String featureRepoUrl = envVars.get("REPO_URL", "");
+        String okRevision = envVars.get("APPROVED_REVISION", "");
         int usableCaseId = 0;
-        String givenCaseId = envVars.get("CASE_ID", "");
-        if (givenCaseId != "") {
-            usableCaseId = Integer.parseInt(givenCaseId);
-        }
 
         String repo_path = envVars.get("REPO_PATH", "");
-
-        if (targetBranch.isEmpty() | featureBranch.isEmpty()) {
-            /* Fetch branch information from Fogbugz */
-            FogbugzCase fallbackCase = new FogbugzNotifier().getFogbugzManager().getCaseById(usableCaseId);
-            repo_path = fallbackCase.getFeatureBranch().split("#")[0];
-            featureBranch = fallbackCase.getFeatureBranch().split("#")[1];
-            targetBranch = fallbackCase.getTargetBranch();
-            envVars.override("FEATURE_BRANCH", featureBranch);
-            envVars.override("TARGET_BRANCH", targetBranch);
-            // Set the new build variables map
-            build.addAction(new EnvInjectBuilderContributionAction(envVars));
-        }
-
         AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
-
         amm.stripLocal();
 
         /* Actual Gatekeepering logic. Seperated to work differently when Rietveld support is active. */
-        boolean runNormalMerge = this.getDescriptor().getUrl().isEmpty();
+        boolean runNormalMerge = okRevision.isEmpty();
         if (!runNormalMerge) { // Use Rietveld support.
 
-            String repoBase = this.getDescriptor().getRepoBase();
-            Matcher baseUrlMatcher = URL_PATTERN.matcher(repoBase);
-            Matcher repoUrlMatcher = URL_PATTERN.matcher(repo_path);
-            String featureRepoUrl;
-
-            // We seem to need to call these, otherwise 'group' method will not work.
-            baseUrlMatcher.matches();
-            repoUrlMatcher.matches();
-
-            /* Logic for recognizing different formats or repository URLs */
-            if (repoUrlMatcher.group(1) != null) {
-                // If repo_path contains startswith one of: ssh:// http:// https://, we assume user put in full path and use that.
-                featureRepoUrl = repo_path;
-
-            } else if (repoUrlMatcher.group(5).contains(baseUrlMatcher.group(5).substring(1, baseUrlMatcher.group(5).length()))) {
-                // if repo_path contains part of repoBase, this is probably in format /var/hg/repo#123, so we fix that.
-                // strips first char from baseUrl group 5, which makes //var/hg /var/hg, or /var/hg var/hg, which makes the if match like we want.
-                featureRepoUrl = baseUrlMatcher.group(1) + baseUrlMatcher.group(3);
-                // If protocol is ssh, add extra /
-                if (baseUrlMatcher.group(2).equals("ssh")) {
-                    featureRepoUrl += "/";
-                }
-                featureRepoUrl += repo_path;
-
-            } else {
-                // else we construct path with base from settings. format probably is users/repo#123 or repo#123, so that works.
-                featureRepoUrl = this.getDescriptor().getRepoBase() + repo_path;
-            }
-
-            // We test if the resulting URL is a valid one, if not, something went wrong and we quit.
-            if (!featureRepoUrl.matches(URL_REGEX)) {
-                throw new Exception("Error while constructing valid repository URL, we came up with " + featureRepoUrl);
-            }
-
-            log.log(Level.INFO, "Pulling from repository at: " + featureRepoUrl);
-
-            /* Fetch latest OK revision from rietveld. */
-            String rietveldUrl = this.getDescriptor().getUrl() + "/get_latest_ok_for_case/" + Integer.toString(usableCaseId)  + "/";
-            URL uri = new URL(rietveldUrl);
-            HttpURLConnection con = (HttpURLConnection) uri.openConnection();
-            if (con.getResponseCode() != 200) {
-                log.log(Level.SEVERE, "Error while fetching latest OK revision from Rietveld.\n");
-                listener.getLogger().append("Connected to: " + rietveldUrl + "\n");
-
-                if (con.getResponseCode() == 404) {
-                    LogMessageSearcher.logMessage(listener, "Build was aborted because the case is not approved yet.");
-                } else if (con.getResponseCode() == 500) {
-                    LogMessageSearcher.logMessage(listener, "Build was aborted because the case does not exist in CodeReview.");
-                }
-
-                throw new Exception("Error while fetching latest OK revision from Rietveld. Response code: " +
-                        Integer.toString(con.getResponseCode()));
-            }
-
-            StringWriter sw = new StringWriter();
-            IOUtils.copy(con.getInputStream(), sw, "UTF-8");
-            String okRevision = sw.toString().replace("\n", "");
-            listener.getLogger().append("Trying to merge with revision '" + okRevision + "' which was fetched from Rietveld.\n");
+            listener.getLogger().append("Trying to merge with revision '" + okRevision + "'.\n");
             listener.getLogger().append("Which should be in repo '" + featureRepoUrl + "', which we will pull.\n");
 
             /* Actual gatekeepering commands. Invokes mercurial exe */
@@ -191,41 +102,6 @@ public class GatekeeperMerge extends Builder {
 
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
-        private String url;
-        private String repoBase;
-
-        public String getUrl() {
-            if (this.url == null) {
-                return "";
-            } else {
-                return this.url;
-            }
-        }
-
-        public void setUrl(String url) {
-            if (url == null) {
-                this.url = "";
-            } else {
-                this.url = url;
-            }
-        }
-
-        public String getRepoBase() {
-            if (this.repoBase == null) {
-                return "";
-            } else {
-                return this.repoBase;
-            }
-        }
-
-        public void setRepoBase(String repoBase){
-            if (repoBase == null) {
-                this.repoBase = "";
-            } else {
-                this.repoBase = repoBase;
-            }
-        }
-
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             return true;
@@ -234,19 +110,6 @@ public class GatekeeperMerge extends Builder {
         @Override
         public String getDisplayName() {
             return "Perform Gatekeeper merge.";
-        }
-
-        public DescriptorImpl() {
-            super();
-            load();
-        }
-
-        @Override
-        public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
-            this.setUrl(formData.getString("url"));
-            this.setRepoBase(formData.getString("repoBase"));
-            save();
-            return super.configure(req, formData);
         }
     }
 }
