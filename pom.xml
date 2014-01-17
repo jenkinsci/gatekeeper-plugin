@@ -3,12 +3,12 @@
   <parent>
     <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.539</version><!-- which version of Jenkins is this plugin built against? -->
+    <version>1.540</version><!-- which version of Jenkins is this plugin built against? -->
   </parent>
 
   <groupId>org.paylogic</groupId>
   <artifactId>GatekeeperPlugin</artifactId>
-  <version>1.2.3</version>
+  <version>1.4.0</version>
   <packaging>hpi</packaging>
 
     <build>
@@ -32,14 +32,9 @@
             <version>1.539</version>
         </dependency>
         <dependency>
-            <groupId>org.paylogic</groupId>
-            <artifactId>Fogbugz</artifactId>
-            <version>[1.2.0,)</version>
-        </dependency>
-        <dependency>
-            <groupId>org.paylogic</groupId>
-            <artifactId>FogbugzPlugin</artifactId>
-            <version>[1.2.2,)</version>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>envinject</artifactId>
+            <version>[1.8.9,)</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -47,9 +42,19 @@
             <version>[1.12.2,)</version>
         </dependency>
         <dependency>
-            <groupId>org.paylogic</groupId>
-            <artifactId>AdvancedMercurial</artifactId>
-            <version>[1.2.3,)</version>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>mercurial</artifactId>
+            <version>[1.50-beta-1,)</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>multiple-scms</artifactId>
+            <version>0.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jenkins-ci.plugins</groupId>
+            <artifactId>git</artifactId>
+            <version>2.0.1</version>
         </dependency>
     </dependencies>
 

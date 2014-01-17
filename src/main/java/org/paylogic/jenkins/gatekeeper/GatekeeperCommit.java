@@ -3,17 +3,16 @@ package org.paylogic.jenkins.gatekeeper;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
-import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
-import lombok.Getter;
 import lombok.extern.java.Log;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.paylogic.jenkins.advancedmercurial.AdvancedMercurialManager;
-import org.paylogic.jenkins.fogbugz.LogMessageSearcher;
+import org.paylogic.jenkins.LogMessageSearcher;
+import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
+import org.paylogic.jenkins.advancedscm.SCMManagerFactory;
 
 import java.io.PrintStream;
 import java.util.logging.Level;
@@ -24,14 +23,9 @@ import java.util.logging.Level;
 @Log
 public class GatekeeperCommit extends Builder {
 
-    @Getter
-    private final boolean doGatekeeping;
-
     @DataBoundConstructor
-    public GatekeeperCommit(boolean doGatekeeping) {
-        this.doGatekeeping = doGatekeeping;
+    public GatekeeperCommit() {
     }
-
 
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
@@ -52,11 +46,12 @@ public class GatekeeperCommit extends Builder {
     private boolean doPerform(AbstractBuild build, Launcher launcher, BuildListener listener) throws Exception {
         /* Set up enviroment and resolve some variables. */
         EnvVars envVars = build.getEnvironment(listener);
-        String targetBranch = Util.replaceMacro("$TARGET_BRANCH", envVars);
-        String featureBranch = Util.replaceMacro("$FEATURE_BRANCH", envVars);
+        String targetBranch = envVars.get("TARGET_BRANCH", "");
+        String featureBranch = envVars.get("FEATURE_BRANCH", "");
+        String commitUsername = envVars.get("COMMIT_USER_NAME", "");
 
-        AdvancedMercurialManager amm = new AdvancedMercurialManager(build, launcher, listener);
-        amm.commit("[Jenkins Integration Merge] Merge " + targetBranch + " with " + featureBranch);
+        AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
+        amm.commit("[Jenkins Integration Merge] Merge " + targetBranch + " with " + featureBranch, commitUsername);
 
         LogMessageSearcher.logMessage(listener, "Gatekeeper merge was commited, because tests seem to be successful.");
         return true;
