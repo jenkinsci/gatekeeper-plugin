@@ -1,13 +1,11 @@
 package org.paylogic.jenkins.upmerge.releasebranch;
 
-import org.paylogic.fogbugz.FogbugzConstants;
-
 import java.text.DecimalFormat;
 import java.util.Collections;
 import java.util.List;
 
 public class ReleaseBranchImpl extends ReleaseBranch {
-
+    public static String RELEASEBRANCH_REGEX = "r\\d{4}";
     private final DecimalFormat df;
 
     private int year;
@@ -23,7 +21,7 @@ public class ReleaseBranchImpl extends ReleaseBranch {
      */
     public ReleaseBranchImpl(String startBranch) throws ReleaseBranchInvalidException {
         super(startBranch);
-        if (!startBranch.matches(FogbugzConstants.RELEASEBRANCH_REGEX)) {
+        if (!startBranch.matches(RELEASEBRANCH_REGEX)) {
             throw new ReleaseBranchInvalidException("Release branch " + startBranch + " is invalid.");
         }
         this.df = new DecimalFormat("00");

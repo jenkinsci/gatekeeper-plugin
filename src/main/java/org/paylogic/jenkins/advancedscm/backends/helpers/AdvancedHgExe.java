@@ -1,4 +1,4 @@
-package org.paylogic.jenkins.advancedmercurial;
+package org.paylogic.jenkins.advancedscm.backends.helpers;
 
 import hudson.AbortException;
 import hudson.FilePath;
@@ -13,6 +13,7 @@ import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.CheckForNull;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
@@ -25,12 +26,13 @@ public class AdvancedHgExe extends HgExe {
 
     public AdvancedHgExe(MercurialSCM scm, Launcher launcher, AbstractBuild build, TaskListener listener) throws IOException, InterruptedException {
         super(scm, launcher, build, listener);
-        this.filePath = build.getWorkspace();
-    }
+        FilePath path = build.getWorkspace();
 
-    public AdvancedHgExe(MercurialSCM scm, Launcher launcher, AbstractBuild build, TaskListener listener, FilePath customPath) throws IOException, InterruptedException {
-        super(scm, launcher, build, listener);
-        this.filePath = customPath;
+        if (scm.getSubdir() != null && !scm.getSubdir().isEmpty()) {
+            path = path.child(scm.getSubdir());
+        }
+
+        this.filePath = path;
     }
 
     /**

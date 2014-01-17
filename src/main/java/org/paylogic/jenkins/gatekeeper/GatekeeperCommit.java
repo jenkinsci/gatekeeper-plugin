@@ -10,8 +10,9 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import lombok.extern.java.Log;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.paylogic.jenkins.advancedmercurial.AdvancedMercurialManager;
-import jenkins.plugins.fogbugz.notifications.LogMessageSearcher;
+import org.paylogic.jenkins.LogMessageSearcher;
+import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
+import org.paylogic.jenkins.advancedscm.SCMManagerFactory;
 
 import java.io.PrintStream;
 import java.util.logging.Level;
@@ -49,7 +50,7 @@ public class GatekeeperCommit extends Builder {
         String featureBranch = envVars.get("FEATURE_BRANCH", "");
         String commitUsername = envVars.get("COMMIT_USER_NAME", "");
 
-        AdvancedMercurialManager amm = new AdvancedMercurialManager(build, launcher, listener);
+        AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
         amm.commit("[Jenkins Integration Merge] Merge " + targetBranch + " with " + featureBranch, commitUsername);
 
         LogMessageSearcher.logMessage(listener, "Gatekeeper merge was commited, because tests seem to be successful.");
