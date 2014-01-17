@@ -14,9 +14,17 @@
     <description>Automatic merging for Jenkins, Gatekeeper style</description>
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Gatekeeper+Plugin</url>
 
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>https://github.com/jenkinsci/gatekeeper-plugin/blob/master/LICENSE</url>
+            <distribution>repo</distribution>
+        </license>
+    </licenses>
+
     <scm>
-        <connection>scm:git:ssh://github.com/jenkinsci/gatekeeper-plugin.git</connection>
-        <developerConnection>scm:git:ssh://github.com/jenkinsci/gatekeeper-plugin.git</developerConnection>
+        <connection>scm:git:git@github.com:jenkinsci/gatekeeper-plugin.git</connection>
+        <developerConnection>scm:git:git@github.com:jenkinsci/gatekeeper-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/gatekeeper-plugin/</url>
     </scm>
 
