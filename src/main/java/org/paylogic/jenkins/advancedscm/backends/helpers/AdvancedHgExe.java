@@ -108,7 +108,8 @@ public class AdvancedHgExe extends HgExe {
     }
 
     public String clean() throws IOException, InterruptedException {
-        String output = popen(this.filePath, listener, 0, new ArgumentListBuilder("--config", "extensions.purge=", "purge"));
+        String output = popen(this.filePath, listener, 0, new ArgumentListBuilder(
+                "--config", "extensions.purge=", "purge", "--all"));
         if (StringUtils.isEmpty(output)) {
             return "";
         }
