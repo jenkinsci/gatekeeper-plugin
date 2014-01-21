@@ -23,8 +23,8 @@
     </licenses>
 
     <scm>
-        <connection>scm:git:ssh://github.com:jenkinsci/gatekeeper-plugin.git</connection>
-        <developerConnection>scm:git:ssh://git@github.com:jenkinsci/gatekeeper-plugin.git</developerConnection>
+        <connection>scm:git:ssh://github.com/jenkinsci/gatekeeper-plugin.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/jenkinsci/gatekeeper-plugin.git</developerConnection>
         <url>https://github.com/jenkinsci/gatekeeper-plugin/</url>
       <tag>GatekeeperPlugin-2.0.3-beta</tag>
     </scm>
