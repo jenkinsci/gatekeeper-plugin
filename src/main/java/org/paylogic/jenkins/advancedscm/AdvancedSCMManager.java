@@ -9,16 +9,18 @@ public interface AdvancedSCMManager {
     /**
      * Get Mercurial branches from command line output,
      * and put them in a List with Branches so it's nice to work with.
+     * @param all : get all or only open branches
      * @return List of Branches
      */
-    public List<Branch> getBranches();
+    public List<Branch> getBranches(boolean all);
 
     /**
-     * Get Mercurial branches from command line output,
+     * Get open Mercurial branches from command line output,
      * and put them in a List so it's nice to work with.
+     * @param all : get all or only open branches
      * @return List of String
      */
-    public List<String> getBranchNames();
+    public List<String> getBranchNames(boolean all);
 
     /**
      * Get the current branch name in the workspace.
@@ -70,6 +72,11 @@ public interface AdvancedSCMManager {
 
 
     /**
+     * Close given branch
+     */
+    public void closeBranch(String message, String username) throws AdvancedSCMException;
+
+    /**
      * Update workspace to 'updateTo' and then merge that workspace with 'revision'.
      * Do not forget to commit merge afterwards manually.
      * @param revision : String with revision, hash or branchname to merge with.
@@ -80,9 +87,9 @@ public interface AdvancedSCMManager {
 
 
     /**
-     * Executes 'push' command
+     * Executes 'push' command with -b <branch>
      */
-    public String push() throws AdvancedSCMException;
+    public String push(String... branchNames) throws AdvancedSCMException;
 
     /**
      * Executes 'pull' command
@@ -101,9 +108,4 @@ public interface AdvancedSCMManager {
      * @throws org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException
      */
     public String pull(String remote, String branch) throws AdvancedSCMException;
-
-    public String pushWithNewBranches() throws AdvancedSCMException;
-
-    public String pushCertainBranch(String branchname) throws AdvancedSCMException;
-
 }

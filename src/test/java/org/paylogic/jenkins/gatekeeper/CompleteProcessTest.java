@@ -19,6 +19,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.logging.Level;
 
+import static org.junit.Assert.*;
 
 @Log
 public class CompleteProcessTest {
@@ -101,6 +102,9 @@ public class CompleteProcessTest {
         m.searchLog(repo, "Merge r1336 with c3");
         m.searchLog(repo, "Merge r1338 with r1336");
         m.searchLog(repo, "Merge r1340 with r1338");
+
+        //check that c3 feature branch is closed
+        assertArrayEquals(new String[] {"default", "r1336", "r1338", "r1340"}, m.getBranches(repo));
     }
 
     @Test

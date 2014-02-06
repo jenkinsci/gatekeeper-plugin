@@ -53,6 +53,12 @@ public class GatekeeperCommit extends Builder {
         AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
         amm.commit("[Jenkins Integration Merge] Merge " + targetBranch + " with " + featureBranch, commitUsername);
 
+        if (amm.getBranchNames(false).contains(featureBranch)) {
+            // we have to close feature branch
+            amm.updateClean(featureBranch);
+            amm.closeBranch("[Jenkins Integration Merge] Closing feature branch " + featureBranch, commitUsername);
+            amm.updateClean(targetBranch);
+        }
         LogMessageSearcher.logMessage(listener, "Gatekeeper merge was commited, because tests seem to be successful.");
         return true;
     }

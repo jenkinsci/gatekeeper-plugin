@@ -84,8 +84,11 @@ public class AdvancedHgExe extends HgExe {
         return output;
     }
 
-    public @CheckForNull String branches() throws IOException, InterruptedException {
-        String output = popen(this.filePath, listener, 0, new ArgumentListBuilder("branches"));
+    public @CheckForNull String branches(String[] extraArgs) throws IOException, InterruptedException {
+        ArgumentListBuilder builder = new ArgumentListBuilder("branches");
+        for(String item : extraArgs){
+            builder.add(item);
+        }String output = popen(this.filePath, listener, 0, builder);
         return output;
     }
 
@@ -129,12 +132,16 @@ public class AdvancedHgExe extends HgExe {
         return output.split(":");
     }
 
-    public String commit(String message, String username) throws IOException, InterruptedException {
+    public String commit(String message, String username, String... extraArgs) throws IOException, InterruptedException {
         int [] returnCodes = {0, 1};
-        String output = popen(
-                this.filePath, listener, 0, new ArgumentListBuilder(
+        ArgumentListBuilder builder = new ArgumentListBuilder(
                 "--config", "ui.username=" + username,
-                "commit", "-m", message), returnCodes);
+                "commit", "-m", message);
+        for(String item : extraArgs){
+            builder.add(item);
+        }
+        String output = popen(
+                this.filePath, listener, 0, builder, returnCodes);
         if (StringUtils.isEmpty(output)) {
             return "";
         }
@@ -152,10 +159,10 @@ public class AdvancedHgExe extends HgExe {
         return output;
     }
 
-    public String push(String... extraArgs) throws IOException, InterruptedException {
-        ArgumentListBuilder builder = new ArgumentListBuilder("push");
+    public String push(String[] extraArgs) throws IOException, InterruptedException {
+        ArgumentListBuilder builder = new ArgumentListBuilder("push", "--new-branch");
         for(String item : extraArgs){
-            builder.add(item);
+            builder.add("-b", item);
         }
         String output = popen(this.filePath, listener, DEFAULT_PUSH_TIMEOUT, builder);
         if (StringUtils.isEmpty(output)) {

@@ -4,6 +4,7 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.plugins.mercurial.MercurialSCM;
+import hudson.util.ArgumentListBuilder;
 import lombok.extern.java.Log;
 import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
 import org.paylogic.jenkins.advancedscm.Branch;
@@ -39,12 +40,16 @@ public class MercurialBackend implements AdvancedSCMManager {
     /**
      * Get Mercurial branches from command line output,
      * and put them in a List  with MercurialBranches so it's nice to work with.
+     * @param all: get all or only open branches
      * @return List of MercurialBranches, empty if no branches are there.
      */
-    public List<Branch> getBranches() {
+    public List<Branch> getBranches(boolean all) {
         String rawBranches = "";
+        String[] args = new String[] {};
+        if (all)
+            args = new String[] {"-c"};
         try {
-            rawBranches = this.advancedHgExe.branches();
+            rawBranches = this.advancedHgExe.branches(args);
         } catch (Exception e) {
             l.append(e.toString());
             return new ArrayList<Branch>();
@@ -66,11 +71,12 @@ public class MercurialBackend implements AdvancedSCMManager {
     /**
      * Get Mercurial branches from command line output,
      * and put them in a List so it's nice to work with.
+     * @param all: get all or only open branches
      * @return List of String
      */
-    public List<String> getBranchNames() {
+    public List<String> getBranchNames(boolean all) {
         List<String> list = new ArrayList<String>();
-        for (Branch branch: this.getBranches()) {
+        for (Branch branch: this.getBranches(all)) {
             list.add(branch.getBranchName());
         }
         return list;
@@ -192,6 +198,25 @@ public class MercurialBackend implements AdvancedSCMManager {
     }
 
     /**
+     * Close given branch. Execute hg commit --close-branch -m"message".
+     * @param message : String with message to give this commit.
+     */
+    public void closeBranch(String message, String username) throws AdvancedSCMException {
+        String output = "";
+        try {
+            output = this.advancedHgExe.commit(message, username, "--close-branch");
+        } catch (Exception e) {
+            MercurialBackend.log.log(Level.SEVERE, "Exception occured while trying to close branch commit.");
+            l.append(e.toString());
+            throw new AdvancedSCMException(e.getMessage());
+        }
+
+        if (output.contains("abort:")) {
+            throw new AdvancedSCMException(output);
+        }
+    }
+
+    /**
      * Merge current workspace with given revision. Executes hg merge <revision>.
      * Do not forget to commit merge afterwards manually.
      * @param revision : String with revision, hash or branchname to merge with.
@@ -267,10 +292,10 @@ public class MercurialBackend implements AdvancedSCMManager {
     /**
      * Executes 'hg push'
      */
-    public String push() throws AdvancedSCMException {
+    public String push(String... branchNames) throws AdvancedSCMException {
         String output = "";
         try {
-            output = this.advancedHgExe.push();
+            output = this.advancedHgExe.push(branchNames);
         } catch (Exception e) {
             MercurialBackend.log.log(Level.SEVERE, "Execption during push :(", e);
             l.append(e.toString());
@@ -329,49 +354,4 @@ public class MercurialBackend implements AdvancedSCMManager {
         }
         return output;
     }
-
-
-    public String pushWithNewBranches() throws AdvancedSCMException {
-        String output = "";
-        try {
-            output = this.advancedHgExe.push("--new-branch");
-        } catch (Exception e) {
-            MercurialBackend.log.log(Level.SEVERE, "Execption during push :(", e);
-            l.append(e.toString());
-            throw new AdvancedSCMException(e.getMessage());
-        }
-
-        if (output.contains("abort: push creates new remote head")) {
-            throw new PushCreatesNewRemoteHeadException(output);
-        } else if (output.contains("abort:")) {
-            throw new AdvancedSCMException(output);
-        }
-
-        return output;
-    }
-
-    public String pushCertainBranch(String branchname) throws AdvancedSCMException {
-        String output = "";
-        try {
-            output = this.advancedHgExe.push("-b", branchname, "--new-branch");
-        } catch (Exception e) {
-            MercurialBackend.log.log(Level.SEVERE, "Exception during push :(", e);
-            l.append(e.toString());
-            throw new AdvancedSCMException(e.getMessage());
-        }
-
-        if (output.contains("abort: push creates new remote head")) {
-            throw new PushCreatesNewRemoteHeadException(output);
-        } else if (output.contains("abort:")) {
-            throw new AdvancedSCMException(output);
-        }
-
-        return output;
-    }
-
-    @Deprecated
-    public String push(String revision) throws AdvancedSCMException {
-        return this.push();
-    }
-
 }

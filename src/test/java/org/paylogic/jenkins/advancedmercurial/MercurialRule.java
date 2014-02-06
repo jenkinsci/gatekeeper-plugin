@@ -23,10 +23,9 @@ import hudson.util.StreamTaskListener;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
+import static java.util.Collections.sort;
 import static org.junit.Assert.*;
 
 import org.junit.Assume;
@@ -123,6 +122,19 @@ public final class MercurialRule extends ExternalResource {
 
     public String getLastChangesetId(File repo) throws Exception {
         return hgExe().popen(new FilePath(repo), listener, false, new ArgumentListBuilder("log", "-l1", "--template", "{node}"));
+    }
+
+    public String[] getBranches(File repo) throws Exception {
+        String rawBranches = hgExe().popen(new FilePath(repo), listener, false, new ArgumentListBuilder("branches"));
+        ArrayList<String> list = new ArrayList<String>();
+        for (String line: rawBranches.split("\n")) {
+            // line should contain: <branchName>                 <revision>:<hash>  (yes, with lots of whitespace)
+            String[] seperatedByWhitespace = line.split("\\s+");
+            String branchName = seperatedByWhitespace[0];
+            list.add(branchName);
+        }
+        sort(list);
+        return list.toArray(new String[list.size()]);
     }
 
     public String searchLog(File repo, String query) throws Exception {

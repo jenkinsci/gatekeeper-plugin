@@ -10,6 +10,7 @@ import org.paylogic.jenkins.advancedscm.Branch;
 import org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException;
 
 import java.util.List;
+import java.util.logging.Level;
 
 public class GitBackend implements AdvancedSCMManager {
 
@@ -29,20 +30,22 @@ public class GitBackend implements AdvancedSCMManager {
     /**
      * Get Mercurial branches from command line output,
      * and put them in a List with Branches so it's nice to work with.
+     * @param all : get all or only open branches
      *
      * @return List of Branches
      */
-    public List<Branch> getBranches() {
+    public List<Branch> getBranches(boolean all) {
         return null;
     }
 
     /**
      * Get Mercurial branches from command line output,
      * and put them in a List so it's nice to work with.
+     * @param all : get all or only open branches
      *
      * @return List of String
      */
-    public List<String> getBranchNames() {
+    public List<String> getBranchNames(boolean all) {
         return null;
     }
 
@@ -130,9 +133,9 @@ public class GitBackend implements AdvancedSCMManager {
     }
 
     /**
-     * Executes 'push' command
+     * Executes 'push' command for given branches
      */
-    public String push() throws AdvancedSCMException {
+    public String push(String... branchNames) throws AdvancedSCMException {
         return null;
     }
 
@@ -156,6 +159,14 @@ public class GitBackend implements AdvancedSCMManager {
     }
 
     /**
+     * Close given branch. Execute hg commit --close-branch -m"message".
+     * @param message : String with message to give this commit.
+     */
+    public void closeBranch(String message, String username) throws AdvancedSCMException {
+        return;
+    }
+
+    /**
      * Pulls from given repository url. Give it a remote to pull changes from there.
      *
      * @param remote
@@ -163,14 +174,6 @@ public class GitBackend implements AdvancedSCMManager {
      * @throws org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException
      */
     public String pull(String remote, String branch) throws AdvancedSCMException {
-        return null;
-    }
-
-    public String pushWithNewBranches() throws AdvancedSCMException {
-        return null;
-    }
-
-    public String pushCertainBranch(String branchname) throws AdvancedSCMException {
         return null;
     }
 }

@@ -94,7 +94,7 @@ public class UpmergeBuilder extends Builder {
         amm.merge();
         amm.commit("[Jenkins Upmerging] Merged heads on " + releaseBranch.getName(), commitUsername);
 
-        List<String> branchList = amm.getBranchNames();
+        List<String> branchList = amm.getBranchNames(false);
         String latestBranchToPush, releaseBranchName;
         latestBranchToPush = releaseBranchName = releaseBranch.getName();
         ReleaseBranch nextBranch = releaseBranch.copy();
@@ -118,8 +118,10 @@ public class UpmergeBuilder extends Builder {
             nextBranch.next(branchList);
             nextBranchName = nextBranch.getName();
         }
-
-        amm.pushCertainBranch(latestBranchToPush);
+        if (amm.getBranchNames(true).contains(featureBranch))
+            amm.push(featureBranch, latestBranchToPush);
+        else
+            amm.push(latestBranchToPush);
         LogMessageSearcher.logMessage(listener, "Pushed changes to repository, on branch '" + latestBranchToPush + "'.");
 
         return true;
