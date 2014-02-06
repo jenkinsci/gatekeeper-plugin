@@ -198,7 +198,7 @@ public class AdvancedHgExe extends HgExe {
 
     public String pullChanges(String otherRepo, String branch) throws IOException, InterruptedException {
         String output = popen(this.filePath, listener, DEFAULT_PUSH_TIMEOUT, new ArgumentListBuilder(
-                "pull", otherRepo, "-b", branch));
+                "pull", otherRepo, "-r", branch));
         if (StringUtils.isEmpty(output)) {
             return "";
         }
