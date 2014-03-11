@@ -107,6 +107,9 @@ public class UpmergeBuilder extends Builder {
                     "[Jenkins Upmerging] Merged " + nextBranchName + " with " + releaseBranchName,
                     commitUsername);
 
+            amm.merge();
+            amm.commit("[Jenkins Upmerging] Merged heads on " + nextBranchName, commitUsername);
+
             LogMessageSearcher.logMessage(
                     listener, "Upmerged " + releaseBranchName + "' to '" + nextBranchName + "'.");
 
