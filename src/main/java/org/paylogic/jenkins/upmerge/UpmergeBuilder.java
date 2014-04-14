@@ -111,7 +111,7 @@ public class UpmergeBuilder extends Builder {
             amm.commit("[Jenkins Upmerging] Merged heads on " + nextBranchName, commitUsername);
 
             LogMessageSearcher.logMessage(
-                    listener, "Upmerged " + releaseBranchName + "' to '" + nextBranchName + "'.");
+                    listener, "Upmerged " + releaseBranchName + " to " + nextBranchName + ".");
 
             latestBranchToPush = nextBranchName;
 
@@ -125,7 +125,7 @@ public class UpmergeBuilder extends Builder {
             amm.push(featureBranch, latestBranchToPush);
         else
             amm.push(latestBranchToPush);
-        LogMessageSearcher.logMessage(listener, "Pushed changes to repository, on branch '" + latestBranchToPush + "'.");
+        LogMessageSearcher.logMessage(listener, "Pushed changes to repository, on branch " + latestBranchToPush + ".");
 
         return true;
     }

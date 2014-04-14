@@ -72,8 +72,8 @@ public class GatekeeperMerge extends Builder {
         boolean runNormalMerge = okRevision.isEmpty();
         if (!runNormalMerge) { // Use Rietveld support.
 
-            listener.getLogger().append("Trying to merge with revision '" + okRevision + "'.\n");
-            listener.getLogger().append("Which should be in repo '" + featureRepoUrl + "', which we will pull.\n");
+            listener.getLogger().append("Trying to merge with revision " + okRevision + ".\n");
+            listener.getLogger().append("Which should be in repo " + featureRepoUrl + ", which we will pull.\n");
 
             /* Actual gatekeepering commands. Invokes mercurial exe */
             amm.pull(featureRepoUrl, featureBranch);
