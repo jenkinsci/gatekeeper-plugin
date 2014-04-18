@@ -1,6 +1,5 @@
 package org.paylogic.jenkins.gatekeeper;
 
-import hudson.Launcher;
 import hudson.model.*;
 import hudson.plugins.mercurial.MercurialSCM;
 import lombok.extern.java.Log;
@@ -9,15 +8,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.TestBuilder;
-import org.paylogic.jenkins.advancedmercurial.MercurialRule;
-import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
-import org.paylogic.jenkins.advancedscm.SCMManagerFactory;
+import org.paylogic.jenkins.advancedscm.MercurialRule;
 import org.paylogic.jenkins.upmerge.UpmergeBuilder;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.logging.Level;
 
 import static org.junit.Assert.*;
 

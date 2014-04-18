@@ -5,56 +5,60 @@
  * More information about this file and it's authors can be found at: https://github.com/jenkinsci/mercurial-plugin/
  */
 
-package org.paylogic.jenkins.advancedmercurial;
+package org.paylogic.jenkins.advancedscm;
 
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Action;
 import hudson.model.FreeStyleBuild;
-import hudson.model.TaskListener;
 import hudson.model.FreeStyleProject;
-import hudson.plugins.mercurial.HgExe;
-import hudson.plugins.mercurial.MercurialTagAction;
+import hudson.model.TaskListener;
+import hudson.plugins.git.*;
+import hudson.plugins.git.Branch;
 import hudson.scm.PollingResult;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.StreamTaskListener;
+import org.jenkinsci.plugins.gitclient.Git;
+import org.jenkinsci.plugins.gitclient.GitClient;
+import org.junit.Assume;
+import org.junit.internal.AssumptionViolatedException;
+import org.junit.rules.ExternalResource;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.paylogic.jenkins.ABuildCause;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static java.util.Collections.sort;
 import static org.junit.Assert.*;
 
-import org.junit.Assume;
-import org.junit.internal.AssumptionViolatedException;
-import org.junit.rules.ExternalResource;
-
-import org.jvnet.hudson.test.JenkinsRule;
-import org.paylogic.jenkins.ABuildCause;
-
-public final class MercurialRule extends ExternalResource {
+public final class GitRule extends ExternalResource {
 
     private TaskListener listener;
 
     private final JenkinsRule j;
 
-    public MercurialRule(JenkinsRule j) {
+    public GitRule(JenkinsRule j) {
         this.j = j;
     }
 
     @Override protected void before() throws Exception {
         listener = new StreamTaskListener(System.out, Charset.defaultCharset());
         try {
-            if (new ProcessBuilder("hg", "--version").start().waitFor() != 0) {
-                throw new AssumptionViolatedException("hg --version signaled an error");
+            if (new ProcessBuilder("git", "--version").start().waitFor() != 0) {
+                throw new AssumptionViolatedException("git --version signaled an error");
             }
         } catch(IOException ioe) {
             String message = ioe.getMessage();
-            if(message.startsWith("Cannot run program \"hg\"") && message.endsWith("No such file or directory")) {
-                throw new AssumptionViolatedException("hg is not available; please check that your PATH environment variable is properly configured");
+            if(message.startsWith("Cannot run program \"git\"") && message.endsWith("No such file or directory")) {
+                throw new AssumptionViolatedException("git is not available; please check that your PATH environment variable is properly configured");
             }
             Assume.assumeNoException(ioe); // failed to check availability of hg
         }
@@ -64,36 +68,23 @@ public final class MercurialRule extends ExternalResource {
         return j.jenkins.createLauncher(listener);
     }
 
-    private HgExe hgExe() throws Exception {
-        return new HgExe(null, null, launcher(), j.jenkins, listener, new EnvVars());
-    }
-
-    public void hg(String... args) throws Exception {
-        HgExe hg = hgExe();
-        assertEquals(0, hg.launch(nobody(hg.seed(false)).add(args)).join());
-    }
-
-    public void hg(File repo, String... args) throws Exception {
-        HgExe hg = hgExe();
-        assertEquals(0, hg.launch(nobody(hg.seed(false)).add(args)).pwd(repo).join());
-    }
-
-    private static ArgumentListBuilder nobody(ArgumentListBuilder args) {
-        return args.add("--config").add("ui.username=nobody@nowhere.net");
+    public GitClient gitClient(File repository) throws Exception {
+        return new Git(listener, new EnvVars()).in(repository).getClient();
     }
 
     public void touchAndCommit(File repo, String... names) throws Exception {
+        GitClient client = gitClient(repo);
         for (String name : names) {
             FilePath toTouch = new FilePath(repo).child(name);
             if (!toTouch.exists()) {
                 toTouch.getParent().mkdirs();
                 toTouch.touch(0);
-                hg(repo, "add", name);
+                client.add(name);
             } else {
                 toTouch.write(toTouch.readToString() + "extra line\n", "UTF-8");
             }
         }
-        hg(repo, "commit", "--message", "added " + Arrays.toString(names));
+        client.commit("added " + Arrays.toString(names));
     }
 
     public String buildAndCheck(FreeStyleProject p, String name,
@@ -109,7 +100,7 @@ public final class MercurialRule extends ExternalResource {
             }
             fail("Could not find " + name + " among " + children);
         }
-        assertNotNull(b.getAction(MercurialTagAction.class));
+        assertNotNull(b.getAction(GitTagAction.class));
         @SuppressWarnings("deprecation")
         String log = b.getLog();
         return log;
@@ -121,24 +112,29 @@ public final class MercurialRule extends ExternalResource {
     }
 
     public String getLastChangesetId(File repo) throws Exception {
-        return hgExe().popen(new FilePath(repo), listener, false, new ArgumentListBuilder("log", "-l1", "--template", "{node}"));
+        return gitClient(repo).revParse("HEAD").name();
     }
 
     public String[] getBranches(File repo) throws Exception {
-        String rawBranches = hgExe().popen(new FilePath(repo), listener, false, new ArgumentListBuilder("branches"));
         ArrayList<String> list = new ArrayList<String>();
-        for (String line: rawBranches.split("\n")) {
-            // line should contain: <branchName>                 <revision>:<hash>  (yes, with lots of whitespace)
-            String[] seperatedByWhitespace = line.split("\\s+");
-            String branchName = seperatedByWhitespace[0];
-            list.add(branchName);
+        for (Branch branch: gitClient(repo).getBranches()) {
+            list.add(branch.toString());
         }
         sort(list);
         return list.toArray(new String[list.size()]);
     }
 
     public String searchLog(File repo, String query) throws Exception {
-        return hgExe().popen(new FilePath(repo), listener, false, new ArgumentListBuilder("log", "-k", query));
+        StringWriter sw = new StringWriter();
+        gitClient(repo).changelog().to(sw).execute();
+        StringWriter output = new StringWriter();
+        for (String s: sw.toString().split("\n")) {
+            if (s.contains(query))
+                output.append("s");
+        }
+        String out = output.toString();
+        assert !out.isEmpty();
+        return out;
     }
 
 }

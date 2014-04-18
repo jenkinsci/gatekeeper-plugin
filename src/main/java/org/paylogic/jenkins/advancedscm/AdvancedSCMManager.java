@@ -12,7 +12,7 @@ public interface AdvancedSCMManager {
      * @param all : get all or only open branches
      * @return List of Branches
      */
-    public List<Branch> getBranches(boolean all);
+    public List<Branch> getBranches (boolean all) throws AdvancedSCMException;
 
     /**
      * Get open Mercurial branches from command line output,
@@ -20,7 +20,7 @@ public interface AdvancedSCMManager {
      * @param all : get all or only open branches
      * @return List of String
      */
-    public List<String> getBranchNames(boolean all);
+    public List<String> getBranchNames(boolean all) throws AdvancedSCMException;
 
     /**
      * Get the current branch name in the workspace.

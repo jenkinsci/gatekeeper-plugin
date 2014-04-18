@@ -1,31 +1,51 @@
 package org.paylogic.jenkins.advancedscm.backends;
 
 
+import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
+import hudson.plugins.git.BranchSpec;
 import hudson.plugins.git.GitSCM;
 import hudson.Launcher;
+import hudson.plugins.git.extensions.GitSCMExtension;
+import hudson.plugins.git.extensions.impl.RelativeTargetDirectory;
+import org.jenkinsci.plugins.gitclient.Git;
+import org.jenkinsci.plugins.gitclient.GitClient;
 import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
 import org.paylogic.jenkins.advancedscm.Branch;
 import org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException;
 
+import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 
-public class GitBackend implements AdvancedSCMManager {
+public class GitBackend extends BaseBackend implements AdvancedSCMManager {
 
     private final AbstractBuild build;
     private final Launcher launcher;
     private final BuildListener listener;
     private final GitSCM scm;
+    private final GitClient git;
 
     public GitBackend(AbstractBuild build, Launcher launcher, BuildListener listener, GitSCM scm) throws Exception {
         this.build = build;
         this.launcher = launcher;
         this.listener = listener;
         this.scm = scm;
-        // TODO: implement git support
-        throw new Exception("Git support is currently not implemented.");
+        FilePath path = build.getWorkspace();
+
+        for (GitSCMExtension extension: scm.getExtensions()){
+            if (extension instanceof RelativeTargetDirectory) {
+                String targetDir = ((RelativeTargetDirectory) extension).getRelativeTargetDir();
+                if (targetDir  != null && !targetDir .isEmpty()) {
+                    path = new FilePath(new File(targetDir));
+                }
+            }
+        }
+
+        this.git = new Git(listener, new EnvVars()).in(path).getClient();
     }
     /**
      * Get Mercurial branches from command line output,
@@ -34,19 +54,18 @@ public class GitBackend implements AdvancedSCMManager {
      *
      * @return List of Branches
      */
-    public List<Branch> getBranches(boolean all) {
-        return null;
-    }
+    public List<Branch> getBranches(boolean all) throws AdvancedSCMException {
+        List<Branch> result = new ArrayList<Branch>();
+        try {
+            for (hudson.plugins.git.Branch branch : git.getBranches()) {
+                result.add(new Branch(branch.getName(), null, branch.getSHA1String()));
+            }
+        }
+        catch (InterruptedException exception) {
+            throw new AdvancedSCMException(exception.toString());
+        }
 
-    /**
-     * Get Mercurial branches from command line output,
-     * and put them in a List so it's nice to work with.
-     * @param all : get all or only open branches
-     *
-     * @return List of String
-     */
-    public List<String> getBranchNames(boolean all) {
-        return null;
+        return result;
     }
 
     /**
@@ -55,16 +74,22 @@ public class GitBackend implements AdvancedSCMManager {
      * @return String with branch name in it.
      */
     public String getBranch() {
-        return null;
+       return null;
+       // TODO: not clear how to get current branch with git client
     }
 
     /**
      * Updates workspace to given revision/branch.
      *
-     * @param revision : String with revision, hash of branchname to update to.
+     * @param revision : String with revision, hash or branchname to update to.
      */
     public void update(String revision) throws AdvancedSCMException {
-
+        try {
+            git.checkout(revision);
+        }
+        catch (InterruptedException exception) {
+            throw new AdvancedSCMException(exception.toString());
+        }
     }
 
     /**
@@ -73,14 +98,21 @@ public class GitBackend implements AdvancedSCMManager {
      * @param revision : String with revision, hash of branchname to update to.
      */
     public void updateClean(String revision) throws AdvancedSCMException {
-
+        update(revision);
+        try {
+            git.clean();
+        }
+        catch (InterruptedException exception) {
+            throw new AdvancedSCMException(exception.toString());
+        }
     }
 
     /**
      * Strip out local commits which are not pushed yet.
      */
     public void stripLocal() throws AdvancedSCMException {
-
+        
+        git.prune();
     }
 
     /**

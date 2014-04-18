@@ -21,7 +21,7 @@ import java.util.logging.Level;
  * Mercurial Implementation of AdvancedSCMManager
  */
 @Log
-public class MercurialBackend implements AdvancedSCMManager {
+public class MercurialBackend extends BaseBackend implements AdvancedSCMManager {
 
     private String hgExe;
     private AdvancedHgExe advancedHgExe;
@@ -64,20 +64,6 @@ public class MercurialBackend implements AdvancedSCMManager {
             String hash = seperatedByColon[1];
 
             list.add(new Branch(branchName, revision, hash));
-        }
-        return list;
-    }
-
-    /**
-     * Get Mercurial branches from command line output,
-     * and put them in a List so it's nice to work with.
-     * @param all: get all or only open branches
-     * @return List of String
-     */
-    public List<String> getBranchNames(boolean all) {
-        List<String> list = new ArrayList<String>();
-        for (Branch branch: this.getBranches(all)) {
-            list.add(branch.getBranchName());
         }
         return list;
     }
