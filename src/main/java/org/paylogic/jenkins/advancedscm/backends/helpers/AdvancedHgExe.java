@@ -13,7 +13,6 @@ import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.CheckForNull;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 

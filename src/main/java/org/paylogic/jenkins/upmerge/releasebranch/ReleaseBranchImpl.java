@@ -5,12 +5,12 @@ import java.util.Collections;
 import java.util.List;
 
 public class ReleaseBranchImpl extends ReleaseBranch {
-    public static String RELEASEBRANCH_REGEX = "r\\d{4}";
+    private static String RELEASEBRANCH_REGEX = "r\\d{4}";  // TODO: parametrize correctly
     private final DecimalFormat df;
 
     private int year;
     private int week;
-    private static String DEFAULT = "default";
+    private String DEFAULT = "default";
     private boolean tip;
 
     /**
@@ -32,6 +32,11 @@ public class ReleaseBranchImpl extends ReleaseBranch {
         this.year = Integer.parseInt(sYear);
         this.week = Integer.parseInt(sWeek);
         this.tip = false;
+    }
+
+    public ReleaseBranchImpl(String startBranch, String default_branch) throws ReleaseBranchInvalidException {
+        this(startBranch);
+        this.DEFAULT = default_branch;
     }
 
     /**
@@ -81,6 +86,6 @@ public class ReleaseBranchImpl extends ReleaseBranch {
      */
     @Override
     public ReleaseBranch copy() throws ReleaseBranchInvalidException {
-        return new ReleaseBranchImpl(this.getName());
+        return new ReleaseBranchImpl(this.getName(), this.DEFAULT);
     }
 }

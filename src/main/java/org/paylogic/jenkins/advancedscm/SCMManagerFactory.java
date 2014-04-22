@@ -4,6 +4,8 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.plugins.git.GitSCM;
+import hudson.plugins.git.extensions.GitSCMExtension;
+import hudson.plugins.git.extensions.impl.RelativeTargetDirectory;
 import hudson.plugins.mercurial.MercurialSCM;
 import hudson.scm.SCM;
 import lombok.extern.java.Log;
@@ -43,11 +45,14 @@ public class SCMManagerFactory {
                             }
                         }
                     } else if (s instanceof GitSCM) {
-                        String subDir = ((GitSCM) s).getRelativeTargetDir(); // TODO: non-deprecated version
-                        if (subDir != null) {
-                            if (subDir.equals(givenRepoSubdir)) {
-                                l.append("Chosen MutliSCM with Git Backend");
-                                return new GitBackend(build, launcher, listener, (GitSCM) s);
+                        GitSCM gitSCM = (GitSCM) s;
+
+                        for (GitSCMExtension extension: gitSCM.getExtensions()){
+                            if (extension instanceof RelativeTargetDirectory) {
+                                String targetDir = ((RelativeTargetDirectory) extension).getRelativeTargetDir();
+                                if (targetDir  != null && !targetDir .isEmpty() && targetDir == givenRepoSubdir) {
+                                    return new GitBackend(build, launcher, listener, (GitSCM) s);
+                                }
                             }
                         }
                     }

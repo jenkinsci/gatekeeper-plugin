@@ -1,23 +1,29 @@
 package org.paylogic.jenkins.upmerge;
 
-import hudson.*;
+import hudson.EnvVars;
+import hudson.Extension;
+import hudson.Launcher;
 import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
 import hudson.model.AbstractProject;
-import hudson.tasks.Builder;
+import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
 import lombok.extern.java.Log;
 import net.sf.json.JSONObject;
+import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.envinject.EnvInjectBuilderContributionAction;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.StaplerRequest;
 import org.paylogic.jenkins.LogMessageSearcher;
 import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
 import org.paylogic.jenkins.advancedscm.SCMManagerFactory;
 import org.paylogic.jenkins.upmerge.releasebranch.ReleaseBranch;
-import org.paylogic.jenkins.upmerge.releasebranch.ReleaseBranchImpl;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 /**
@@ -75,58 +81,50 @@ public class UpmergeBuilder extends Builder {
         if (givenCaseId != "") {
             usableCaseId = Integer.parseInt(givenCaseId);
         }
+        List<String> branchesToPush = new ArrayList<String>();
+        branchesToPush.add(targetBranch);
+        branchesToPush.add(featureBranch);
 
         /* Get branch name using MercurialBackend, which we'll need later on as well. */
         AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
 
         /* Get a ReleaseBranch compatible object to bump release branch versions with. */
-        /* TODO: resolve user ReleaseBranchImpl of choice here, learn Java Generics first ;) */
-        ReleaseBranch releaseBranch = new ReleaseBranchImpl(targetBranch);
-
+        ReleaseBranch releaseBranch = amm.getReleaseBranch(targetBranch);
+        String releaseBranchName = releaseBranch.getName();
         /*
          Do actual upmerging in this loop, until we can't upmerge no more.
          Will not attempt to Upmerge to branches that were not in the 'hg branches' output.
         */
 
         // Pull to also get new releases created during tests.
-        amm.pull();
+        amm.pull(null, targetBranch);
         amm.update("");
-        amm.merge();
-        amm.commit("[Jenkins Upmerging] Merged heads on " + releaseBranch.getName(), commitUsername);
+        amm.merge("[Jenkins Upmerging] Merged heads on " + releaseBranchName, commitUsername);
 
         List<String> branchList = amm.getBranchNames(false);
-        String latestBranchToPush, releaseBranchName;
-        latestBranchToPush = releaseBranchName = releaseBranch.getName();
         ReleaseBranch nextBranch = releaseBranch.copy();
         nextBranch.next(branchList);
         String nextBranchName = nextBranch.getName();
         while(nextBranchName != releaseBranchName) {
             amm.update(nextBranchName);
-            amm.mergeWorkspaceWith(releaseBranchName);
-            amm.commit(
+            amm.mergeWorkspaceWith(releaseBranchName, nextBranchName,
                     "[Jenkins Upmerging] Merged " + nextBranchName + " with " + releaseBranchName,
                     commitUsername);
-
-            amm.merge();
-            amm.commit("[Jenkins Upmerging] Merged heads on " + nextBranchName, commitUsername);
-
+            amm.merge("[Jenkins Upmerging] Merged heads on " + nextBranchName, commitUsername);
             LogMessageSearcher.logMessage(
                     listener, "Upmerged " + releaseBranchName + " to " + nextBranchName + ".");
-
-            latestBranchToPush = nextBranchName;
-
+            branchesToPush.add(nextBranchName);
             // Bump releases
             releaseBranch.next(branchList);
             releaseBranchName = releaseBranch.getName();
             nextBranch.next(branchList);
             nextBranchName = nextBranch.getName();
         }
-        if (amm.getBranchNames(true).contains(featureBranch))
-            amm.push(featureBranch, latestBranchToPush);
-        else
-            amm.push(latestBranchToPush);
-        LogMessageSearcher.logMessage(listener, "Pushed changes to repository, on branch " + latestBranchToPush + ".");
 
+        // pass branches to push to later build actions
+        Map<String, String> vars = new HashMap<String, String>();
+        vars.put("BRANCHES_TO_PUSH", StringUtils.join(branchesToPush, ","));
+        build.addAction(new EnvInjectBuilderContributionAction(vars));
         return true;
     }
 

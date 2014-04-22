@@ -10,14 +10,10 @@ package org.paylogic.jenkins.advancedscm;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.model.Action;
-import hudson.model.FreeStyleBuild;
-import hudson.model.FreeStyleProject;
-import hudson.model.TaskListener;
-import hudson.plugins.git.*;
+import hudson.model.*;
 import hudson.plugins.git.Branch;
+import hudson.plugins.git.GitTagAction;
 import hudson.scm.PollingResult;
-import hudson.util.ArgumentListBuilder;
 import hudson.util.StreamTaskListener;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
@@ -37,7 +33,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import static java.util.Collections.sort;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 public final class GitRule extends ExternalResource {
 
@@ -89,7 +86,8 @@ public final class GitRule extends ExternalResource {
 
     public String buildAndCheck(FreeStyleProject p, String name,
             Action... actions) throws Exception {
-        FreeStyleBuild b = j.assertBuildStatusSuccess(p.scheduleBuild2(0, new ABuildCause(), actions).get()); // Somehow this needs a cause or it will fail
+        FreeStyleBuild b = p.scheduleBuild2(0, new ABuildCause(), actions).get();
+        assert b.getResult() == Result.SUCCESS;
         // for (String line : b.getLog(Integer.MAX_VALUE)) {
         // System.err.println(">> " + line);
         // }
@@ -118,7 +116,8 @@ public final class GitRule extends ExternalResource {
     public String[] getBranches(File repo) throws Exception {
         ArrayList<String> list = new ArrayList<String>();
         for (Branch branch: gitClient(repo).getBranches()) {
-            list.add(branch.toString());
+            String[] parts = branch.getName().split("/");
+            list.add(parts[parts.length - 1]);
         }
         sort(list);
         return list.toArray(new String[list.size()]);

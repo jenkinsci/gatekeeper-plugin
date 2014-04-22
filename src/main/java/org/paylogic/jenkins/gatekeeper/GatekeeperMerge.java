@@ -1,21 +1,19 @@
 package org.paylogic.jenkins.gatekeeper;
 
 import hudson.EnvVars;
-import hudson.Launcher;
 import hudson.Extension;
+import hudson.Launcher;
 import hudson.model.AbstractBuild;
-import hudson.model.BuildListener;
 import hudson.model.AbstractProject;
-import hudson.tasks.Builder;
+import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Builder;
 import lombok.extern.java.Log;
-import net.sf.json.JSONObject;
 import org.kohsuke.stapler.DataBoundConstructor;
-import org.kohsuke.stapler.StaplerRequest;
-
 import org.paylogic.jenkins.LogMessageSearcher;
 import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
 import org.paylogic.jenkins.advancedscm.SCMManagerFactory;
+import org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException;
 import org.paylogic.jenkins.advancedscm.exceptions.MergeConflictException;
 
 import java.io.PrintStream;
@@ -62,6 +60,7 @@ public class GatekeeperMerge extends Builder {
         String targetBranch = envVars.get("TARGET_BRANCH", "");
         String featureRepoUrl = envVars.get("REPO_URL", "");
         String okRevision = envVars.get("APPROVED_REVISION", "");
+        String commitUsername = envVars.get("COMMIT_USER_NAME", "");
         int usableCaseId = 0;
 
         String repo_path = envVars.get("REPO_PATH", "");
@@ -79,21 +78,30 @@ public class GatekeeperMerge extends Builder {
             amm.pull(featureRepoUrl, featureBranch);
             amm.updateClean(targetBranch);
             amm.clean();
-            amm.mergeWorkspaceWith(okRevision);
-
+            amm.mergeWorkspaceWith(okRevision, null, "[Jenkins Integration Merge] Merge with " + okRevision,
+                    commitUsername);
             LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
                     okRevision + " from " + featureRepoUrl + " to " + targetBranch + ".");
         } else {
             amm.pull("", featureBranch);
             amm.update(targetBranch);
-            amm.mergeWorkspaceWith(featureBranch);
+            amm.mergeWorkspaceWith(featureBranch, null, "[Jenkins Integration Merge] Merge with " + featureBranch,
+                    commitUsername);
             LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
                     featureBranch + " to " + targetBranch + ".");
         }
-
+        commit(amm, listener, envVars, targetBranch, featureBranch, commitUsername);
         return true;
     }
 
+    private void commit(AdvancedSCMManager amm, BuildListener listener, EnvVars envVars, String targetBranch, String featureBranch, String commitUsername) throws AdvancedSCMException {
+        if (amm.getBranchNames(false).contains(featureBranch)) {
+            // we have to close feature branch
+            amm.closeBranch(featureBranch, "[Jenkins Integration Merge] Closing feature branch " + featureBranch, commitUsername);
+            amm.updateClean(targetBranch);
+        }
+        LogMessageSearcher.logMessage(listener, "Gatekeeper merge was commited, because tests seem to be successful.");
+    }
 
     @Override
     public DescriptorImpl getDescriptor() {

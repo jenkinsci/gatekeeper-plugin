@@ -12,28 +12,29 @@ import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Action;
 import hudson.model.FreeStyleBuild;
-import hudson.model.TaskListener;
 import hudson.model.FreeStyleProject;
+import hudson.model.TaskListener;
 import hudson.plugins.mercurial.HgExe;
 import hudson.plugins.mercurial.MercurialTagAction;
 import hudson.scm.PollingResult;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.StreamTaskListener;
+import org.junit.Assume;
+import org.junit.internal.AssumptionViolatedException;
+import org.junit.rules.ExternalResource;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.paylogic.jenkins.ABuildCause;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static java.util.Collections.sort;
 import static org.junit.Assert.*;
-
-import org.junit.Assume;
-import org.junit.internal.AssumptionViolatedException;
-import org.junit.rules.ExternalResource;
-
-import org.jvnet.hudson.test.JenkinsRule;
-import org.paylogic.jenkins.ABuildCause;
 
 public final class MercurialRule extends ExternalResource {
 

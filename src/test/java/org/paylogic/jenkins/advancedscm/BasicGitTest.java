@@ -7,7 +7,6 @@ import hudson.plugins.git.GitSCM;
 import hudson.plugins.git.UserRemoteConfig;
 import hudson.plugins.git.extensions.GitSCMExtension;
 import hudson.plugins.git.extensions.impl.RelativeTargetDirectory;
-import hudson.plugins.mercurial.MercurialSCM;
 import hudson.scm.SCM;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.jenkinsci.plugins.multiplescms.MultiSCM;
@@ -26,7 +25,7 @@ import java.util.List;
 
 public class BasicGitTest {
     @Rule public JenkinsRule j = new JenkinsRule();
-    @Rule public GitRule m = new GitRule(j);
+    @Rule public GitRule g = new GitRule(j);
     @Rule public TemporaryFolder tmp = new TemporaryFolder();
     @Rule public TemporaryFolder tmp2 = new TemporaryFolder();
     private File repo;
@@ -42,19 +41,19 @@ public class BasicGitTest {
     public void testBasicMerge() throws Exception {
         FreeStyleProject p = j.createFreeStyleProject();
         List<UserRemoteConfig> remotes = new ArrayList<UserRemoteConfig>();
-        remotes.add(new UserRemoteConfig(repo.getPath(), "test", "master", null));
+        remotes.add(new UserRemoteConfig(repo.getPath(), "origin", "master", null));
         List<BranchSpec> branches = new ArrayList<BranchSpec>();
         branches.add(new BranchSpec("master"));
         p.setScm(new GitSCM(remotes, branches, false, null, null, null, null));
 
         // Init repo with release and feature branch.
-        GitClient client = m.gitClient(repo);
+        GitClient client = g.gitClient(repo);
         client.init();
-        m.touchAndCommit(repo, "init");
-        client.checkoutBranch("r1336", "HEAD");
-        m.touchAndCommit(repo, "r1336");
-        client.checkoutBranch("c3", "HEAD");
-        m.touchAndCommit(repo, "c3");
+        g.touchAndCommit(repo, "init");
+        client.checkout("HEAD", "r1336");
+        g.touchAndCommit(repo, "r1336");
+        client.checkout("HEAD", "c3");
+        g.touchAndCommit(repo, "c3");
 
         // Custom builder that merges feature branch with release branch using AdvancedSCMManager.
         p.getBuildersList().add(new TestBuilder() {
@@ -63,9 +62,7 @@ public class BasicGitTest {
                 try {
                     AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
                     amm.update("r1336");
-                    amm.mergeWorkspaceWith("c3");
-                    amm.commit("Merge test!", "TestRunner");
-
+                    amm.mergeWorkspaceWith("c3", null, "merge c3", "test <testuser@example.com>");
                     return true;
                 } catch (Exception e) {
                     e.printStackTrace(listener.getLogger());
@@ -75,7 +72,7 @@ public class BasicGitTest {
         });
 
         // Assert file is here (should be after successful merge)
-        m.buildAndCheck(p, "c3");
+        g.buildAndCheck(p, "c3");
     }
 
     @Test
@@ -84,14 +81,14 @@ public class BasicGitTest {
         ArrayList<SCM> scmList = new ArrayList<SCM>();
 
         List<UserRemoteConfig> remotes = new ArrayList<UserRemoteConfig>();
-        remotes.add(new UserRemoteConfig(repo.getPath(), "test", "master", null));
+        remotes.add(new UserRemoteConfig(repo.getPath(), "origin", "master", null));
         scmList.add(new GitSCM(remotes, null, false, null, null, null, null));
 
         remotes = new ArrayList<UserRemoteConfig>();
-        remotes.add(new UserRemoteConfig(repo2.getPath(), "test", "master", null));
+        remotes.add(new UserRemoteConfig(repo2.getPath(), "origin", "master", null));
         List<GitSCMExtension> extensions = new ArrayList<GitSCMExtension>();
         extensions.add(new RelativeTargetDirectory("src/asdf"));
-        scmList.add(new GitSCM(remotes, null, false, null, null, null, null));
+        scmList.add(new GitSCM(remotes, null, false, null, null, null, extensions));
 
         p.setScm(new MultiSCM(scmList));
 
@@ -99,17 +96,17 @@ public class BasicGitTest {
         parameters.add(new StringParameterValue("REPO_SUBDIR", "src/asdf"));
 
         // Init repo with release and feature branch.
-        GitClient client = m.gitClient(repo);
+        GitClient client = g.gitClient(repo);
         client.init();
-        m.touchAndCommit(repo, "dummy");
+        g.touchAndCommit(repo, "dummy");
 
-        client = m.gitClient(repo2);
+        client = g.gitClient(repo2);
         client.init();
-        m.touchAndCommit(repo2, "init");
-        client.checkoutBranch("r1336", "HEAD");
-        m.touchAndCommit(repo2, "r1336");
-        client.checkoutBranch("c3", "HEAD");
-        m.touchAndCommit(repo2, "c3");
+        g.touchAndCommit(repo2, "init");
+        client.checkout("HEAD", "r1336");
+        g.touchAndCommit(repo2, "r1336");
+        client.checkout("HEAD", "c3");
+        g.touchAndCommit(repo2, "c3");
 
         // Custom builder that merges feature branch with release branch using AdvancedSCMManager.
         p.getBuildersList().add(new TestBuilder() {
@@ -118,9 +115,7 @@ public class BasicGitTest {
                 try {
                     AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
                     amm.update("r1336");
-                    amm.mergeWorkspaceWith("c3");
-                    amm.commit("Merge test!", "TestRunner");
-
+                    amm.mergeWorkspaceWith("c3", null, "merge c3", "test <testuser@example.com>");
                     return true;
                 } catch (Exception e) {
                     e.printStackTrace(listener.getLogger());
@@ -130,6 +125,6 @@ public class BasicGitTest {
         });
 
         // Assert file is here (should be after successful merge)
-        m.buildAndCheck(p, "src/asdf/c3", new ParametersAction(parameters));
+        g.buildAndCheck(p, "src/asdf/c3", new ParametersAction(parameters));
     }
 }

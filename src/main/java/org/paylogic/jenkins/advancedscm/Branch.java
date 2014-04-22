@@ -10,7 +10,7 @@ import lombok.Getter;
  */
 public class Branch {
     @Getter private String branchName;
-    @Getter private int revision;
+    @Getter private Integer revision;
     @Getter private String hash;
 
     public Branch(String branchName, @Nullable Integer revision, @Nullable String hash) {
