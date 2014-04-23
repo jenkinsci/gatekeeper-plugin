@@ -100,9 +100,6 @@ public final class MercurialRule extends ExternalResource {
     public String buildAndCheck(FreeStyleProject p, String name,
             Action... actions) throws Exception {
         FreeStyleBuild b = j.assertBuildStatusSuccess(p.scheduleBuild2(0, new ABuildCause(), actions).get()); // Somehow this needs a cause or it will fail
-        // for (String line : b.getLog(Integer.MAX_VALUE)) {
-        // System.err.println(">> " + line);
-        // }
         if (!b.getWorkspace().child(name).exists()) {
             Set<String> children = new TreeSet<String>();
             for (FilePath child : b.getWorkspace().list()) {

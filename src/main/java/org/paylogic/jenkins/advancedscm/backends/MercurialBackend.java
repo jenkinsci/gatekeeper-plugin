@@ -48,8 +48,9 @@ public class MercurialBackend extends BaseBackend implements AdvancedSCMManager 
     public List<Branch> getBranches(boolean all) {
         String rawBranches = "";
         String[] args = new String[] {};
-        if (all)
-            args = new String[] {"-c"};
+        if (all) {
+            args = new String[]{"-c"};
+        }
         try {
             rawBranches = this.advancedHgExe.branches(args);
         } catch (Exception e) {
@@ -74,12 +75,12 @@ public class MercurialBackend extends BaseBackend implements AdvancedSCMManager 
      * Get the current branch name in the workspace. Executes 'hg branch'
      * @return String with branch name in it.
      */
-    public String getBranch() {
+    public String getBranch() throws AdvancedSCMException {
         String branchName = "";
         try {
             branchName = this.advancedHgExe.branch();
         } catch (Exception e) {
-            l.append(e.toString());
+            throw new AdvancedSCMException(e.toString());
         }
         return branchName;
     }
@@ -197,8 +198,9 @@ public class MercurialBackend extends BaseBackend implements AdvancedSCMManager 
      * @return String : Output of merge command (should be empty if all went well)
      */
     public String mergeWorkspaceWith(String revision, String updateTo, String message, String username) throws AdvancedSCMException {
-        if (updateTo != null)
+        if (updateTo != null) {
             this.update(updateTo);
+        }
         String output = "";
         try {
             output = this.advancedHgExe.merge(revision);

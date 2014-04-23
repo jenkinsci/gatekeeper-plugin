@@ -20,7 +20,7 @@ public class AdvancedHgExe extends HgExe {
 
     private FilePath filePath;
 
-    public static int DEFAULT_TIMEOUT = 360; // 6 minutes (time is in seconds)
+    public static int DEFAULT_TIMEOUT = 6 * 60; // 6 minutes (time is in seconds)
     public static int DEFAULT_PUSH_TIMEOUT = 60 * 60 * 60; // one hour (time is in seconds)
 
     public AdvancedHgExe(MercurialSCM scm, Launcher launcher, AbstractBuild build, TaskListener listener) throws IOException, InterruptedException {

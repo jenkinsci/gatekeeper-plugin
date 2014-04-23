@@ -38,7 +38,9 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
         this.listener = listener;
         this.scm = scm;
         this.git = scm.createClient(listener, build.getEnvironment(listener), build);
-        this.rawGit = new AdvancedCliGit(scm, new File(build.getWorkspace().absolutize().getRemote()), listener, build.getEnvironment(listener));
+        this.rawGit = new AdvancedCliGit(
+                scm, new File(build.getWorkspace().absolutize().getRemote()), listener,
+                build.getEnvironment(listener));
     }
 
     /**
@@ -73,8 +75,9 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
         List<Branch> result = new ArrayList<Branch>();
         try {
             for (hudson.plugins.git.Branch branch : git.getBranches()) {
-                if (!branch.getName().contains("/"))
+                if (!branch.getName().contains("/")) {
                     result.add(new Branch(branch.getName(), null, branch.getSHA1String()));
+                }
             }
         }
         catch (InterruptedException exception) {
@@ -104,9 +107,13 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
      *
      * @return String with branch name in it.
      */
-    public String getBranch() {
-       return null;
-       // TODO: not clear how to get current branch with git client
+    public String getBranch() throws AdvancedSCMException {
+        try {
+            return rawGit.launchCommand("rev-parse", "--abbrev-ref", "HEAD");
+        }
+        catch (InterruptedException exception) {
+            throw new AdvancedSCMException(exception.toString());
+        }
     }
 
     /**
@@ -172,8 +179,9 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
      */
     public String mergeWorkspaceWith(String revision, String updateTo, String message, String username) throws AdvancedSCMException {
         try {
-            if (updateTo != null)
+            if (updateTo != null) {
                 update(updateTo);
+            }
             ObjectId rev;
             try {
                 rev = git.revParse("feature/" + revision);
@@ -214,8 +222,9 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
         List<String> repoBranchNames = getLocalBranchNames();
         try {
             for (String branch: branchNames) {
-                if (repoBranchNames.contains(branch))
+                if (repoBranchNames.contains(branch)) {
                     git.push().to(new URIish(git.getRemoteUrl("origin"))).ref(branch).execute();
+                }
             }
             return null;
         }
@@ -247,7 +256,7 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
     }
 
     /**
-     * Close given branch. Execute hg commit --close-branch -m"message".
+     * Close given branch. Nothing has to be done in git backend.
      * @param branch: String branch name.
      * @param message : String with message to give this commit.
      * @param username : String commit user name (with email)
@@ -265,8 +274,9 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
      */
     public String pull(String remote, String branch) throws AdvancedSCMException {
         try {
-            if (remote == null || remote.isEmpty())
+            if (remote == null || remote.isEmpty()) {
                 remote = git.getRemoteUrl("origin");
+            }
             try {
                 rawGit.launchCommand("remote", "remove", "feature");
             }

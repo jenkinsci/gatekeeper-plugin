@@ -85,7 +85,7 @@ public class UpmergeBuilder extends Builder {
         branchesToPush.add(targetBranch);
         branchesToPush.add(featureBranch);
 
-        /* Get branch name using MercurialBackend, which we'll need later on as well. */
+        /* Get branch name using AdvancedSCMManager, which we'll need later on as well. */
         AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
 
         /* Get a ReleaseBranch compatible object to bump release branch versions with. */
@@ -93,7 +93,7 @@ public class UpmergeBuilder extends Builder {
         String releaseBranchName = releaseBranch.getName();
         /*
          Do actual upmerging in this loop, until we can't upmerge no more.
-         Will not attempt to Upmerge to branches that were not in the 'hg branches' output.
+         Will not attempt to Upmerge to branches that were not in the repo branch list.
         */
 
         // Pull to also get new releases created during tests.

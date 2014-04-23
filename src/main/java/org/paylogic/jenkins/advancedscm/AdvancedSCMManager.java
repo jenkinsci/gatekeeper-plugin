@@ -28,7 +28,7 @@ public interface AdvancedSCMManager {
      * Get the current branch name in the workspace.
      * @return String with branch name in it.
      */
-    public String getBranch();
+    public String getBranch() throws AdvancedSCMException;
 
     /**
      * Updates workspace to given revision/branch.

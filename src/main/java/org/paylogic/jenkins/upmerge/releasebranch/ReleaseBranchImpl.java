@@ -62,8 +62,9 @@ public class ReleaseBranchImpl extends ReleaseBranch {
         this.next();
         while (!branches.contains(this.getName())) {
             this.next();
-            if (this.getName().compareTo(maxBranch) < 0)
+            if (this.getName().compareTo(maxBranch) < 0) {
                 this.tip = true;
+            }
         }
     }
 
@@ -74,8 +75,9 @@ public class ReleaseBranchImpl extends ReleaseBranch {
      */
     @Override
     public String getName() {
-        if (this.tip)
+        if (this.tip) {
             return DEFAULT;
+        }
         return String.format("r%s%s", df.format(this.year), df.format(this.week));
     }
 

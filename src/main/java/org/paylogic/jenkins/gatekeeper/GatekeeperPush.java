@@ -31,7 +31,7 @@ public class GatekeeperPush extends Builder {
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         PrintStream l = listener.getLogger();
         l.println("----------------------------------------------------------");
-        l.println("------------------- Gatekeeper push --------------------");
+        l.println("-------------------- Gatekeeper push ---------------------");
         l.println("----------------------------------------------------------");
         try {
             return this.doPerform(build, launcher, listener);

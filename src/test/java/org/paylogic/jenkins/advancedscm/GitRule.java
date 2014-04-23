@@ -88,9 +88,6 @@ public final class GitRule extends ExternalResource {
             Action... actions) throws Exception {
         FreeStyleBuild b = p.scheduleBuild2(0, new ABuildCause(), actions).get();
         assert b.getResult() == Result.SUCCESS;
-        // for (String line : b.getLog(Integer.MAX_VALUE)) {
-        // System.err.println(">> " + line);
-        // }
         if (!b.getWorkspace().child(name).exists()) {
             Set<String> children = new TreeSet<String>();
             for (FilePath child : b.getWorkspace().list()) {
@@ -128,8 +125,9 @@ public final class GitRule extends ExternalResource {
         gitClient(repo).changelog().to(sw).execute();
         StringWriter output = new StringWriter();
         for (String s: sw.toString().split("\n")) {
-            if (s.contains(query))
+            if (s.contains(query)) {
                 output.append("s");
+            }
         }
         String out = output.toString();
         assert !out.isEmpty();
