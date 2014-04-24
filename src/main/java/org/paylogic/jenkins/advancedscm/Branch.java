@@ -10,10 +10,10 @@ import lombok.Getter;
  */
 public class Branch {
     @Getter private String branchName;
-    @Getter private int revision;
+    @Getter private Integer revision;
     @Getter private String hash;
 
-    public Branch(String branchName, @Nullable int revision, @Nullable String hash) {
+    public Branch(String branchName, @Nullable Integer revision, @Nullable String hash) {
         this.branchName = branchName;
         this.revision = revision;
         this.hash = hash;

@@ -5,35 +5,36 @@
  * More information about this file and it's authors can be found at: https://github.com/jenkinsci/mercurial-plugin/
  */
 
-package org.paylogic.jenkins.advancedmercurial;
+package org.paylogic.jenkins.advancedscm;
 
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.Action;
 import hudson.model.FreeStyleBuild;
-import hudson.model.TaskListener;
 import hudson.model.FreeStyleProject;
+import hudson.model.TaskListener;
 import hudson.plugins.mercurial.HgExe;
 import hudson.plugins.mercurial.MercurialTagAction;
 import hudson.scm.PollingResult;
 import hudson.util.ArgumentListBuilder;
 import hudson.util.StreamTaskListener;
+import org.junit.Assume;
+import org.junit.internal.AssumptionViolatedException;
+import org.junit.rules.ExternalResource;
+import org.jvnet.hudson.test.JenkinsRule;
+import org.paylogic.jenkins.ABuildCause;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
 
 import static java.util.Collections.sort;
 import static org.junit.Assert.*;
-
-import org.junit.Assume;
-import org.junit.internal.AssumptionViolatedException;
-import org.junit.rules.ExternalResource;
-
-import org.jvnet.hudson.test.JenkinsRule;
-import org.paylogic.jenkins.ABuildCause;
 
 public final class MercurialRule extends ExternalResource {
 
@@ -99,9 +100,6 @@ public final class MercurialRule extends ExternalResource {
     public String buildAndCheck(FreeStyleProject p, String name,
             Action... actions) throws Exception {
         FreeStyleBuild b = j.assertBuildStatusSuccess(p.scheduleBuild2(0, new ABuildCause(), actions).get()); // Somehow this needs a cause or it will fail
-        // for (String line : b.getLog(Integer.MAX_VALUE)) {
-        // System.err.println(">> " + line);
-        // }
         if (!b.getWorkspace().child(name).exists()) {
             Set<String> children = new TreeSet<String>();
             for (FilePath child : b.getWorkspace().list()) {

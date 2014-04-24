@@ -1,31 +1,36 @@
 package org.paylogic.jenkins.gatekeeper;
 
-import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.FreeStyleProject;
+import hudson.model.ParameterValue;
+import hudson.model.ParametersAction;
+import hudson.model.StringParameterValue;
+import hudson.plugins.git.BranchSpec;
+import hudson.plugins.git.GitSCM;
+import hudson.plugins.git.UserRemoteConfig;
 import hudson.plugins.mercurial.MercurialSCM;
 import lombok.extern.java.Log;
+import org.jenkinsci.plugins.gitclient.GitClient;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.jvnet.hudson.test.JenkinsRule;
-import org.jvnet.hudson.test.TestBuilder;
-import org.paylogic.jenkins.advancedmercurial.MercurialRule;
-import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
-import org.paylogic.jenkins.advancedscm.SCMManagerFactory;
+import org.paylogic.jenkins.advancedscm.GitRule;
+import org.paylogic.jenkins.advancedscm.MercurialRule;
 import org.paylogic.jenkins.upmerge.UpmergeBuilder;
 
-import java.io.*;
+import java.io.File;
 import java.util.ArrayList;
-import java.util.logging.Level;
+import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 @Log
 public class CompleteProcessTest {
 
     @Rule public JenkinsRule j = new JenkinsRule();
     @Rule public MercurialRule m = new MercurialRule(j);
+    @Rule public GitRule g = new GitRule(j);
     @Rule public TemporaryFolder tmp = new TemporaryFolder();
     @Rule public TemporaryFolder tmp2 = new TemporaryFolder();
     private File repo;
@@ -38,12 +43,12 @@ public class CompleteProcessTest {
     }
 
     @Test
-    public void testGatekeeperingAndUpmerging() throws Exception {
+    public void testGatekeeperingAndUpmergingMercurial() throws Exception {
         /*
          * So:
          * set up a repo with 3 releases and 1 feature branch
          * inject parameters TARGET_BRANCH and stuff
-         * run job with both gatekeeper and upmerge tasks
+         * run job with gatekeeper, upmerge and push tasks
          * assert file from feature branch is in latest release branch
          */
         FreeStyleProject p = j.createFreeStyleProject();
@@ -63,8 +68,8 @@ public class CompleteProcessTest {
         m.touchAndCommit(repo, "c3");
 
         GatekeeperMerge mergeBuilder = new GatekeeperMerge();
-        GatekeeperCommit commitBuilder = new GatekeeperCommit();
         UpmergeBuilder upmergeBuilder = new UpmergeBuilder();
+        GatekeeperPush pushBuilder = new GatekeeperPush();
 
         ArrayList<ParameterValue> parameters = new ArrayList<ParameterValue>();
         parameters.add(new StringParameterValue("TARGET_BRANCH", "r1336"));
@@ -73,8 +78,8 @@ public class CompleteProcessTest {
         parameters.add(new StringParameterValue("COMMIT_USER_NAME", "JenkinsTestRunner"));
 
         p.getBuildersList().add(mergeBuilder);
-        p.getBuildersList().add(commitBuilder);
         p.getBuildersList().add(upmergeBuilder);
+        p.getBuildersList().add(pushBuilder);
         m.buildAndCheck(p, "c3", new ParametersAction(parameters));
 
         // Check more files, we can do this on original repo, so we make sure that builder pushed changes.
@@ -108,7 +113,79 @@ public class CompleteProcessTest {
     }
 
     @Test
-    public void testGatekeeperingFromDifferentRepoAndUpmerging() throws Exception {
+    public void testGatekeeperingAndUpmergingGit() throws Exception {
+        /*
+         * So:
+         * set up a repo with 3 releases and 1 feature branch
+         * inject parameters TARGET_BRANCH and stuff
+         * run job with gatekeeper, upmerge and push tasks
+         * assert file from feature branch is in latest release branch
+         */
+        FreeStyleProject p = j.createFreeStyleProject();
+        List<UserRemoteConfig> remotes = new ArrayList<UserRemoteConfig>();
+        remotes.add(new UserRemoteConfig(repo.getPath(), "origin", "master", null));
+        List<BranchSpec> branches = new ArrayList<BranchSpec>();
+        branches.add(new BranchSpec("master"));
+        p.setScm(new GitSCM(remotes, branches, false, null, null, null, null));
+
+        // Init repo with 3 releases and feature branch.
+        GitClient client = g.gitClient(repo);
+        client.init();
+        g.touchAndCommit(repo, "base");
+        client.checkout("HEAD", "r1336");
+        g.touchAndCommit(repo, "r1336");
+        client.checkout("HEAD", "r1338");
+        g.touchAndCommit(repo, "r1338");
+        client.checkout("HEAD", "r1340");
+        g.touchAndCommit(repo, "r1340");
+        client.checkout().branch("r1336");
+        client.checkout("HEAD", "c3");
+        g.touchAndCommit(repo, "c3");
+
+        GatekeeperMerge mergeBuilder = new GatekeeperMerge();
+        UpmergeBuilder upmergeBuilder = new UpmergeBuilder();
+        GatekeeperPush pushBuilder = new GatekeeperPush();
+
+        ArrayList<ParameterValue> parameters = new ArrayList<ParameterValue>();
+        parameters.add(new StringParameterValue("TARGET_BRANCH", "r1336"));
+        parameters.add(new StringParameterValue("ORIGINAL_BRANCH", "r1336"));
+        parameters.add(new StringParameterValue("FEATURE_BRANCH", "c3"));
+        parameters.add(new StringParameterValue("COMMIT_USER_NAME", "JenkinsTestRunner"));
+
+        p.getBuildersList().add(mergeBuilder);
+        p.getBuildersList().add(upmergeBuilder);
+        p.getBuildersList().add(pushBuilder);
+        g.buildAndCheck(p, "c3", new ParametersAction(parameters));
+
+        // Check more files, we can do this on original repo, so we make sure that builder pushed changes.
+        client.checkout().ref("r1336").execute();
+        assert new File(repo, "c3").exists();
+        assert new File(repo, "r1336").exists();
+
+        client.checkout().ref("r1338").execute();
+        assert new File(repo, "c3").exists();
+        assert new File(repo, "r1336").exists();
+        assert new File(repo, "r1338").exists();
+
+        client.checkout().ref("r1340").execute();
+        assert new File(repo, "c3").exists();
+        assert new File(repo, "r1336").exists();
+        assert new File(repo, "r1338").exists();
+        assert new File(repo, "r1340").exists();
+
+        client.checkout().ref("master").execute();
+        assert new File(repo, "c3").exists();
+        assert new File(repo, "r1336").exists();
+        assert new File(repo, "r1338").exists();
+        assert new File(repo, "r1340").exists();
+
+        //check that c3 feature branch is not removed
+        assertArrayEquals(new String[]{"c3", "master", "r1336", "r1338", "r1340"}, g.getBranches(repo));
+    }
+
+
+    @Test
+    public void testGatekeeperingFromDifferentRepoAndUpmergingMercurial() throws Exception {
         /*
          * So:
          * set up a repo with 3 releases
@@ -148,8 +225,8 @@ public class CompleteProcessTest {
         parameters.add(new StringParameterValue("COMMIT_USER_NAME", "JenkinsTestRunner"));
 
         p.getBuildersList().add(new GatekeeperMerge());
-        p.getBuildersList().add(new GatekeeperCommit());
         p.getBuildersList().add(new UpmergeBuilder());
+        p.getBuildersList().add(new GatekeeperPush());
 
         m.buildAndCheck(p, "c3", new ParametersAction(parameters));
 
@@ -178,6 +255,83 @@ public class CompleteProcessTest {
         m.searchLog(repo, "Merge r1336 with c3");
         m.searchLog(repo, "Merge r1338 with r1336");
         m.searchLog(repo, "Merge r1340 with r1338");
+    }
+
+    @Test
+    public void testGatekeeperingFromDifferentRepoAndUpmergingGit() throws Exception {
+        /*
+         * So:
+         * set up a repo with 3 releases
+         * set up another repo which should somehow be a copy of this repo with a feature branch
+         * inject APPROVED_REVISION, which is the latest revision of the feature brnach
+         * inject parameters TARGET_BRANCH and stuff
+         * run job with both gatekeeper and upmerge tasks
+         * assert file from feature branch is in latest release branch
+         */
+
+        FreeStyleProject p = j.createFreeStyleProject();
+        List<UserRemoteConfig> remotes = new ArrayList<UserRemoteConfig>();
+        remotes.add(new UserRemoteConfig(repo.getPath(), "origin", "master", null));
+        List<BranchSpec> branches = new ArrayList<BranchSpec>();
+        branches.add(new BranchSpec("master"));
+        p.setScm(new GitSCM(remotes, branches, false, null, null, null, null));
+
+        // Init repo with 3 releases and feature branch.
+        GitClient client = g.gitClient(repo);
+        client.init();
+        g.touchAndCommit(repo, "base");
+        client.checkout("HEAD", "r1336");
+        g.touchAndCommit(repo, "r1336");
+        client.checkout("HEAD", "r1338");
+        g.touchAndCommit(repo, "r1338");
+        client.checkout("HEAD", "r1340");
+        g.touchAndCommit(repo, "r1340");
+
+        GitClient client2 = g.gitClient(repo2);
+        client2.clone(repo.getAbsolutePath(), "origin", false, null);
+        client2.checkout().branch("r1336");
+        client2.checkout("HEAD", "c3");
+        g.touchAndCommit(repo2, "c3");
+
+        final String okRevision = g.getLastChangesetId(repo2);
+        ArrayList<ParameterValue> parameters = new ArrayList<ParameterValue>();
+        parameters.add(new StringParameterValue("TARGET_BRANCH", "r1336"));
+        parameters.add(new StringParameterValue("ORIGINAL_BRANCH", "r1336"));
+        parameters.add(new StringParameterValue("FEATURE_BRANCH", "c3"));
+        parameters.add(new StringParameterValue("APPROVED_REVISION", okRevision));
+        parameters.add(new StringParameterValue("REPO_URL", repo2.getAbsolutePath()));
+        parameters.add(new StringParameterValue("COMMIT_USER_NAME", "JenkinsTestRunner"));
+
+        p.getBuildersList().add(new GatekeeperMerge());
+        p.getBuildersList().add(new UpmergeBuilder());
+        p.getBuildersList().add(new GatekeeperPush());
+
+        g.buildAndCheck(p, "c3", new ParametersAction(parameters));
+
+        // Check more files, we can do this on original repo, so we make sure that builder pushed changes.
+        // Check more files, we can do this on original repo, so we make sure that builder pushed changes.
+
+        client.checkout().ref("r1336").execute();
+        client.clean();
+        assert new File(repo, "c3").exists();
+        assert new File(repo, "r1336").exists();
+
+        client.checkout().ref("r1338").execute();
+        assert new File(repo, "c3").exists();
+        assert new File(repo, "r1336").exists();
+        assert new File(repo, "r1338").exists();
+
+        client.checkout().ref("r1340").execute();
+        assert new File(repo, "c3").exists();
+        assert new File(repo, "r1336").exists();
+        assert new File(repo, "r1338").exists();
+        assert new File(repo, "r1340").exists();
+
+        client.checkout().ref("master").execute();
+        assert new File(repo, "c3").exists();
+        assert new File(repo, "r1336").exists();
+        assert new File(repo, "r1338").exists();
+        assert new File(repo, "r1340").exists();
     }
 
 }

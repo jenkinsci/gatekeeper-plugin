@@ -1,6 +1,8 @@
 package org.paylogic.jenkins.advancedscm;
 
 import org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException;
+import org.paylogic.jenkins.upmerge.releasebranch.ReleaseBranch;
+import org.paylogic.jenkins.upmerge.releasebranch.ReleaseBranchInvalidException;
 
 import java.util.List;
 
@@ -12,7 +14,7 @@ public interface AdvancedSCMManager {
      * @param all : get all or only open branches
      * @return List of Branches
      */
-    public List<Branch> getBranches(boolean all);
+    public List<Branch> getBranches (boolean all) throws AdvancedSCMException;
 
     /**
      * Get open Mercurial branches from command line output,
@@ -20,13 +22,13 @@ public interface AdvancedSCMManager {
      * @param all : get all or only open branches
      * @return List of String
      */
-    public List<String> getBranchNames(boolean all);
+    public List<String> getBranchNames(boolean all) throws AdvancedSCMException;
 
     /**
      * Get the current branch name in the workspace.
      * @return String with branch name in it.
      */
-    public String getBranch();
+    public String getBranch() throws AdvancedSCMException;
 
     /**
      * Updates workspace to given revision/branch.
@@ -51,40 +53,32 @@ public interface AdvancedSCMManager {
     public void clean() throws AdvancedSCMException;
 
     /**
-     * Commit the workspace changes with the given message.
-     * @param message : String with message to give this commit.
-     */
-    public void commit(String message, String username) throws AdvancedSCMException;
-
-    /**
      * Merge current workspace with given revision.
-     * Do not forget to commit merge afterwards manually.
      * @param revision : String with revision, hash or branchname to merge with.
+     * @param revision : String with revision, hash or branchname to merge with.
+     * @param updateTo : String with revision, hash or branchname to update working copy to before actual merge.
+     * @param message : String commit message
+     * @param username : String commit user name (with email)
      * @return String : Output of merge command (should be empty if all went well)
      */
-    public String mergeWorkspaceWith(String revision) throws AdvancedSCMException;
+    public String mergeWorkspaceWith(String revision, String updateTo, String message, String username) throws AdvancedSCMException;
 
     /**
      * Merge possible current branch's heads.
+     * @param message : String commit message
+     * @param username : String commit user name (with email)
      * @return String : Output of merge command (should be empty if all went well)
      */
-    public String merge() throws AdvancedSCMException;
+    public String merge(String message, String username) throws AdvancedSCMException;
 
 
     /**
      * Close given branch
+     * @param branch: String branch name.
+     * @param message : String with message to give this commit.
+     * @param username : String commit user name (with email)
      */
-    public void closeBranch(String message, String username) throws AdvancedSCMException;
-
-    /**
-     * Update workspace to 'updateTo' and then merge that workspace with 'revision'.
-     * Do not forget to commit merge afterwards manually.
-     * @param revision : String with revision, hash or branchname to merge with.
-     * @param updateTo : String with revision, hash or branchname to update to before merge.
-     * @return String : output of command run.
-     */
-    public String mergeWorkspaceWith(String revision, String updateTo) throws AdvancedSCMException;
-
+    public void closeBranch(String branch, String message, String username) throws AdvancedSCMException;
 
     /**
      * Executes 'push' command with -b <branch>
@@ -108,4 +102,12 @@ public interface AdvancedSCMManager {
      * @throws org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException
      */
     public String pull(String remote, String branch) throws AdvancedSCMException;
+
+    /**
+     * Get release branch from given branch name.
+     * @param branch : String branch name
+     * @return ReleaseBranch : release branch object
+     */
+    public ReleaseBranch getReleaseBranch(String branch) throws ReleaseBranchInvalidException;
+
 }

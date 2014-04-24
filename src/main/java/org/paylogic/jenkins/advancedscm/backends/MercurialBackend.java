@@ -4,12 +4,14 @@ import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.plugins.mercurial.MercurialSCM;
-import hudson.util.ArgumentListBuilder;
 import lombok.extern.java.Log;
 import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
 import org.paylogic.jenkins.advancedscm.Branch;
 import org.paylogic.jenkins.advancedscm.backends.helpers.AdvancedHgExe;
 import org.paylogic.jenkins.advancedscm.exceptions.*;
+import org.paylogic.jenkins.upmerge.releasebranch.ReleaseBranch;
+import org.paylogic.jenkins.upmerge.releasebranch.ReleaseBranchImpl;
+import org.paylogic.jenkins.upmerge.releasebranch.ReleaseBranchInvalidException;
 
 import java.io.IOException;
 import java.io.PrintStream;
@@ -21,7 +23,7 @@ import java.util.logging.Level;
  * Mercurial Implementation of AdvancedSCMManager
  */
 @Log
-public class MercurialBackend implements AdvancedSCMManager {
+public class MercurialBackend extends BaseBackend implements AdvancedSCMManager {
 
     private String hgExe;
     private AdvancedHgExe advancedHgExe;
@@ -46,8 +48,9 @@ public class MercurialBackend implements AdvancedSCMManager {
     public List<Branch> getBranches(boolean all) {
         String rawBranches = "";
         String[] args = new String[] {};
-        if (all)
-            args = new String[] {"-c"};
+        if (all) {
+            args = new String[]{"-c"};
+        }
         try {
             rawBranches = this.advancedHgExe.branches(args);
         } catch (Exception e) {
@@ -69,29 +72,15 @@ public class MercurialBackend implements AdvancedSCMManager {
     }
 
     /**
-     * Get Mercurial branches from command line output,
-     * and put them in a List so it's nice to work with.
-     * @param all: get all or only open branches
-     * @return List of String
-     */
-    public List<String> getBranchNames(boolean all) {
-        List<String> list = new ArrayList<String>();
-        for (Branch branch: this.getBranches(all)) {
-            list.add(branch.getBranchName());
-        }
-        return list;
-    }
-
-    /**
      * Get the current branch name in the workspace. Executes 'hg branch'
      * @return String with branch name in it.
      */
-    public String getBranch() {
+    public String getBranch() throws AdvancedSCMException {
         String branchName = "";
         try {
             branchName = this.advancedHgExe.branch();
         } catch (Exception e) {
-            l.append(e.toString());
+            throw new AdvancedSCMException(e.toString());
         }
         return branchName;
     }
@@ -177,32 +166,15 @@ public class MercurialBackend implements AdvancedSCMManager {
         }
     }
 
-
-    /**
-     * Commit the workspace changes with the given message. Executes hg commit -m <message>.
-     * @param message : String with message to give this commit.
-     */
-    public void commit(String message, String username) throws AdvancedSCMException {
-        String output = "";
-        try {
-            output = this.advancedHgExe.commit(message, username);
-        } catch (Exception e) {
-            MercurialBackend.log.log(Level.SEVERE, "Exception occured while trying to commit workspace changes.");
-            l.append(e.toString());
-            throw new AdvancedSCMException(e.getMessage());
-        }
-
-        if (output.contains("abort:")) {
-            throw new AdvancedSCMException(output);
-        }
-    }
-
     /**
      * Close given branch. Execute hg commit --close-branch -m"message".
+     * @param branch: String branch name.
      * @param message : String with message to give this commit.
+     * @param username : String commit user name (with email)
      */
-    public void closeBranch(String message, String username) throws AdvancedSCMException {
+    public void closeBranch(String branch, String message, String username) throws AdvancedSCMException {
         String output = "";
+        updateClean(branch);
         try {
             output = this.advancedHgExe.commit(message, username, "--close-branch");
         } catch (Exception e) {
@@ -220,12 +192,19 @@ public class MercurialBackend implements AdvancedSCMManager {
      * Merge current workspace with given revision. Executes hg merge <revision>.
      * Do not forget to commit merge afterwards manually.
      * @param revision : String with revision, hash or branchname to merge with.
+     * @param updateTo : String with revision, hash or branchname to update working copy to before actual merge.
+     * @param message : String commit message
+     * @param username : String commit user name (with email)
      * @return String : Output of merge command (should be empty if all went well)
      */
-    public String mergeWorkspaceWith(String revision) throws AdvancedSCMException {
+    public String mergeWorkspaceWith(String revision, String updateTo, String message, String username) throws AdvancedSCMException {
+        if (updateTo != null) {
+            this.update(updateTo);
+        }
         String output = "";
         try {
             output = this.advancedHgExe.merge(revision);
+            output += this.advancedHgExe.commit(message, username);
         } catch (Exception e) {
             MercurialBackend.log.log(Level.SEVERE, "Exception occured during merge of workspace with " + revision + ".", e);
             l.append(e.toString());
@@ -249,12 +228,15 @@ public class MercurialBackend implements AdvancedSCMManager {
 
     /**
      * Merge possible current branch's heads.
+     * @param message : String commit message
+     * @param username : String commit user name (with email)
      * @return String : Output of merge command (should be empty if all went well)
      */
-    public String merge() throws AdvancedSCMException {
+    public String merge(String message, String username) throws AdvancedSCMException {
         String output = "";
         try {
             output = this.advancedHgExe.merge("");
+            output += this.advancedHgExe.commit(message, username);
         } catch (Exception e) {
             MercurialBackend.log.log(Level.SEVERE, "Exception occured during merge of the heads.", e);
             l.append(e.toString());
@@ -273,21 +255,6 @@ public class MercurialBackend implements AdvancedSCMManager {
 
         return output;
     }
-
-
-    /**
-     * Update workspace to 'updateTo' and then merge that workspace with 'revision'.
-     * Executes hg update <updateTo> && hg merge <revision>.
-     * Do not forget to commit merge afterwards manually.
-     * @param revision : String with revision, hash or branchname to merge with.
-     * @param updateTo : String with revision, hash or branchname to update to before merge.
-     * @return String : output of command run.
-     */
-    public String mergeWorkspaceWith(String revision, String updateTo) throws AdvancedSCMException {
-        this.update(updateTo);
-        return this.mergeWorkspaceWith(revision);
-    }
-
 
     /**
      * Executes 'hg push'
@@ -334,7 +301,7 @@ public class MercurialBackend implements AdvancedSCMManager {
     public String pull(String remote, String branch) throws AdvancedSCMException {
         String output = "";
         try {
-            if (remote.isEmpty()) {
+            if (remote == null || remote.isEmpty()) {
                 output = this.advancedHgExe.pullChanges();
             }
             else if (branch.isEmpty()) {
@@ -353,5 +320,9 @@ public class MercurialBackend implements AdvancedSCMManager {
             throw new AdvancedSCMException(output);
         }
         return output;
+    }
+
+    public ReleaseBranch getReleaseBranch(String branch) throws ReleaseBranchInvalidException {
+        return new ReleaseBranchImpl(branch, "default");
     }
 }

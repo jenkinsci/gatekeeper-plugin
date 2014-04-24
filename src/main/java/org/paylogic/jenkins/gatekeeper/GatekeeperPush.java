@@ -21,22 +21,22 @@ import java.util.logging.Level;
  * Created by bubenkoff on 20.12.13.
  */
 @Log
-public class GatekeeperCommit extends Builder {
+public class GatekeeperPush extends Builder {
 
     @DataBoundConstructor
-    public GatekeeperCommit() {
+    public GatekeeperPush() {
     }
 
     @Override
     public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener) {
         PrintStream l = listener.getLogger();
         l.println("----------------------------------------------------------");
-        l.println("------------------- Gatekeeper commit --------------------");
+        l.println("-------------------- Gatekeeper push ---------------------");
         l.println("----------------------------------------------------------");
         try {
             return this.doPerform(build, launcher, listener);
         } catch (Exception e) {
-            log.log(Level.SEVERE, "Exception during Gatekeeeper commit.", e);
+            log.log(Level.SEVERE, "Exception during Gatekeeeper push.", e);
             l.append("Exception occured, build aborting...\n");
             LogMessageSearcher.logMessage(listener, e.toString());
             return false;
@@ -45,21 +45,11 @@ public class GatekeeperCommit extends Builder {
 
     private boolean doPerform(AbstractBuild build, Launcher launcher, BuildListener listener) throws Exception {
         /* Set up enviroment and resolve some variables. */
-        EnvVars envVars = build.getEnvironment(listener);
-        String targetBranch = envVars.get("TARGET_BRANCH", "");
-        String featureBranch = envVars.get("FEATURE_BRANCH", "");
-        String commitUsername = envVars.get("COMMIT_USER_NAME", "");
-
         AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
-        amm.commit("[Jenkins Integration Merge] Merge " + targetBranch + " with " + featureBranch, commitUsername);
-
-        if (amm.getBranchNames(false).contains(featureBranch)) {
-            // we have to close feature branch
-            amm.updateClean(featureBranch);
-            amm.closeBranch("[Jenkins Integration Merge] Closing feature branch " + featureBranch, commitUsername);
-            amm.updateClean(targetBranch);
-        }
-        LogMessageSearcher.logMessage(listener, "Gatekeeper merge was commited, because tests seem to be successful.");
+        EnvVars envVars = build.getEnvironment(listener);
+        String branches_to_push = envVars.get("BRANCHES_TO_PUSH", "");
+        amm.push(branches_to_push.split(","));
+        LogMessageSearcher.logMessage(listener, "Gatekeeper push is done.");
         return true;
     }
 
@@ -79,7 +69,7 @@ public class GatekeeperCommit extends Builder {
 
         @Override
         public String getDisplayName() {
-            return "Perform Gatekeeper commit.";
+            return "Perform Gatekeeper push.";
         }
 
         public DescriptorImpl() {

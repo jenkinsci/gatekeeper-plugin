@@ -1,4 +1,4 @@
-package org.paylogic.jenkins.advancedmercurial;
+package org.paylogic.jenkins.advancedscm;
 
 import hudson.Launcher;
 import hudson.model.*;
@@ -11,8 +11,6 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.TestBuilder;
-import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
-import org.paylogic.jenkins.advancedscm.SCMManagerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -52,9 +50,7 @@ public class BasicMercurialTest {
                 try {
                     AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
                     amm.update("r1336");
-                    amm.mergeWorkspaceWith("c3");
-                    amm.commit("Merge test!", "TestRunner");
-
+                    amm.mergeWorkspaceWith("c3", null, "merge c3", "test <testuser@example.com>");
                     return true;
                 } catch (Exception e) {
                     e.printStackTrace(listener.getLogger());
@@ -96,9 +92,7 @@ public class BasicMercurialTest {
                 try {
                     AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
                     amm.update("r1336");
-                    amm.mergeWorkspaceWith("c3");
-                    amm.commit("Merge test!", "TestRunner");
-
+                    amm.mergeWorkspaceWith("c3", null, "merge c3", "test <testuser@example.com>");
                     return true;
                 } catch (Exception e) {
                     e.printStackTrace(listener.getLogger());
