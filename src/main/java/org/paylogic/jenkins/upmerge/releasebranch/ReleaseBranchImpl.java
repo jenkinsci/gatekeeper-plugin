@@ -45,9 +45,9 @@ public class ReleaseBranchImpl extends ReleaseBranch {
      */
     @Override
     public void next() {
-        this.week += 2;
+        this.week += 1;
         if (this.week > 52) {
-            this.week = 2;
+            this.week = 1;
             this.year++;
         }
     }
@@ -62,7 +62,7 @@ public class ReleaseBranchImpl extends ReleaseBranch {
         this.next();
         while (!branches.contains(this.getName())) {
             this.next();
-            if (this.getName().compareTo(maxBranch) < 0) {
+            if (this.getName().compareTo(maxBranch) > 0) {
                 this.tip = true;
             }
         }

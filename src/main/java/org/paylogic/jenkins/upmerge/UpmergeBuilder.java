@@ -108,11 +108,11 @@ public class UpmergeBuilder extends Builder {
         while(nextBranchName != releaseBranchName) {
             amm.update(nextBranchName);
             amm.mergeWorkspaceWith(releaseBranchName, nextBranchName,
-                    "[Jenkins Upmerging] Merged " + nextBranchName + " with " + releaseBranchName,
+                    "[Jenkins Upmerging] Merged " + releaseBranchName + " into " + nextBranchName,
                     commitUsername);
             amm.merge("[Jenkins Upmerging] Merged heads on " + nextBranchName, commitUsername);
             LogMessageSearcher.logMessage(
-                    listener, "Upmerged " + releaseBranchName + " to " + nextBranchName + ".");
+                    listener, "Upmerged " + releaseBranchName + " into " + nextBranchName + ".");
             branchesToPush.add(nextBranchName);
             // Bump releases
             releaseBranch.next(branchList);

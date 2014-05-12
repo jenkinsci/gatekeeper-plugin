@@ -78,14 +78,16 @@ public class GatekeeperMerge extends Builder {
             amm.pull(featureRepoUrl, featureBranch);
             amm.updateClean(targetBranch);
             amm.clean();
-            amm.mergeWorkspaceWith(okRevision, null, "[Jenkins Integration Merge] Merge with " + okRevision,
+            amm.mergeWorkspaceWith(okRevision, null, "[Jenkins Integration Merge] Merge " + featureBranch + " into "
+                    + targetBranch,
                     commitUsername);
             LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
                     okRevision + " from " + featureRepoUrl + " to " + targetBranch + ".");
         } else {
             amm.pull("", featureBranch);
             amm.update(targetBranch);
-            amm.mergeWorkspaceWith(featureBranch, null, "[Jenkins Integration Merge] Merge with " + featureBranch,
+            amm.mergeWorkspaceWith(featureBranch, null, "[Jenkins Integration Merge] Merge " + featureBranch + " into "
+                    + targetBranch,
                     commitUsername);
             LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
                     featureBranch + " to " + targetBranch + ".");
