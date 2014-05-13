@@ -1,6 +1,10 @@
 package org.paylogic.jenkins.upmerge.releasebranch;
 
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.Predicate;
+
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -58,12 +62,19 @@ public class ReleaseBranchImpl extends ReleaseBranch {
      */
     @Override
     public void next(List<String> branches) {
+        branches = new ArrayList<String>(branches);
+        CollectionUtils.filter(branches, new Predicate(){
+            public boolean evaluate(Object input ) {
+                return ((String)input).matches(RELEASEBRANCH_REGEX);
+            }
+        });
         String maxBranch = Collections.max(branches);
         this.next();
-        while (!branches.contains(this.getName())) {
+        while (!branches.contains(this.getName()) && !this.tip) {
             this.next();
             if (this.getName().compareTo(maxBranch) > 0) {
                 this.tip = true;
+                break;
             }
         }
     }
