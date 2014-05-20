@@ -8,11 +8,13 @@ import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
+import hudson.util.FormValidation;
 import lombok.extern.java.Log;
 import net.sf.json.JSONObject;
 import org.apache.commons.lang.StringUtils;
 import org.jenkinsci.plugins.envinject.EnvInjectBuilderContributionAction;
 import org.kohsuke.stapler.DataBoundConstructor;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.paylogic.jenkins.LogMessageSearcher;
 import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
@@ -32,8 +34,11 @@ import java.util.logging.Level;
 @Log
 public class UpmergeBuilder extends Builder {
 
+    public final String commitUsername;
+
     @DataBoundConstructor
-    public UpmergeBuilder() {
+    public UpmergeBuilder(String commitUsername) {
+        this.commitUsername = commitUsername;
     }
 
     /**
@@ -75,7 +80,6 @@ public class UpmergeBuilder extends Builder {
         EnvVars envVars = build.getEnvironment(listener);
         String featureBranch = envVars.get("FEATURE_BRANCH", "");
         String targetBranch = envVars.get("TARGET_BRANCH", "");
-        String commitUsername = envVars.get("COMMIT_USER_NAME", "");
         int usableCaseId = 0;
         String givenCaseId = envVars.get("CASE_ID", "");
         if (givenCaseId != "") {
@@ -99,10 +103,7 @@ public class UpmergeBuilder extends Builder {
 
         List<String> branchList = amm.getBranchNames(true);
         List<String> branchesToPush = new ArrayList<String>();
-        if (branchList.contains(targetBranch)) {
-            // can be not a branch, but a bookmark
-            branchesToPush.add(targetBranch);
-        }
+        branchesToPush.add(targetBranch);
         if (branchList.contains(featureBranch)) {
             // can be not a branch, but a bookmark
             branchesToPush.add(featureBranch);
@@ -160,6 +161,15 @@ public class UpmergeBuilder extends Builder {
         public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
             save();
             return super.configure(req,formData);
+        }
+
+        public FormValidation doCheckCommitUsername(@QueryParameter String value) {
+            if (!value.isEmpty()) {
+                return FormValidation.ok();
+            }
+            else {
+                return FormValidation.error("Required field");
+            }
         }
     }
 }
