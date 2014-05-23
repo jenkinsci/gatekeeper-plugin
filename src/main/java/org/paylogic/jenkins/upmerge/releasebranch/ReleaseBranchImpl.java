@@ -27,7 +27,7 @@ public class ReleaseBranchImpl extends ReleaseBranch {
         super(startBranch);
         this.DEFAULT = default_branch;
         this.df = new DecimalFormat("00");
-        if (startBranch == DEFAULT) {
+        if (startBranch.equals(DEFAULT)) {
             this.tip = true;
         }
         else {
