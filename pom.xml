@@ -77,7 +77,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>envinject</artifactId>
-            <version>[1.8.9,)</version>
+            <version>[1.89,)</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
