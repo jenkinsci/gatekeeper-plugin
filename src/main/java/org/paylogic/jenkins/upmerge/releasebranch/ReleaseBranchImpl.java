@@ -25,17 +25,22 @@ public class ReleaseBranchImpl extends ReleaseBranch {
      */
     public ReleaseBranchImpl(String startBranch) throws ReleaseBranchInvalidException {
         super(startBranch);
-        if (!startBranch.matches(RELEASEBRANCH_REGEX)) {
-            throw new ReleaseBranchInvalidException("Release branch " + startBranch + " is invalid.");
-        }
         this.df = new DecimalFormat("00");
+        if (startBranch == DEFAULT) {
+            this.tip = true;
+        }
+        else {
+            if (!startBranch.matches(RELEASEBRANCH_REGEX)) {
+                throw new ReleaseBranchInvalidException("Release branch " + startBranch + " is invalid.");
+            }
 
-        String sYear = startBranch.substring(1, 3);
-        String sWeek = startBranch.substring(3, 5);
+            String sYear = startBranch.substring(1, 3);
+            String sWeek = startBranch.substring(3, 5);
 
-        this.year = Integer.parseInt(sYear);
-        this.week = Integer.parseInt(sWeek);
-        this.tip = false;
+            this.year = Integer.parseInt(sYear);
+            this.week = Integer.parseInt(sWeek);
+            this.tip = false;
+        }
     }
 
     public ReleaseBranchImpl(String startBranch, String default_branch) throws ReleaseBranchInvalidException {
