@@ -14,7 +14,7 @@ public class ReleaseBranchImpl extends ReleaseBranch {
 
     private int year;
     private int week;
-    private String DEFAULT = "default";
+    private String DEFAULT;
     private boolean tip;
 
     /**
@@ -23,8 +23,9 @@ public class ReleaseBranchImpl extends ReleaseBranch {
      *
      * @param startBranch Name of branch to start with (String).
      */
-    public ReleaseBranchImpl(String startBranch) throws ReleaseBranchInvalidException {
+    public ReleaseBranchImpl(String startBranch, String default_branch) throws ReleaseBranchInvalidException {
         super(startBranch);
+        this.DEFAULT = default_branch;
         this.df = new DecimalFormat("00");
         if (startBranch == DEFAULT) {
             this.tip = true;
@@ -41,11 +42,6 @@ public class ReleaseBranchImpl extends ReleaseBranch {
             this.week = Integer.parseInt(sWeek);
             this.tip = false;
         }
-    }
-
-    public ReleaseBranchImpl(String startBranch, String default_branch) throws ReleaseBranchInvalidException {
-        this(startBranch);
-        this.DEFAULT = default_branch;
     }
 
     /**
