@@ -81,10 +81,6 @@ public class UpmergeBuilder extends Builder {
         if (givenCaseId != "") {
             usableCaseId = Integer.parseInt(givenCaseId);
         }
-        List<String> branchesToPush = new ArrayList<String>();
-        branchesToPush.add(targetBranch);
-        branchesToPush.add(featureBranch);
-
         /* Get branch name using AdvancedSCMManager, which we'll need later on as well. */
         AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
 
@@ -101,7 +97,16 @@ public class UpmergeBuilder extends Builder {
         amm.update("");
         amm.merge("[Jenkins Upmerging] Merged heads on " + releaseBranchName, commitUsername);
 
-        List<String> branchList = amm.getBranchNames(false);
+        List<String> branchList = amm.getBranchNames(true);
+        List<String> branchesToPush = new ArrayList<String>();
+        if (branchList.contains(targetBranch)) {
+            // can be not a branch, but a bookmark
+            branchesToPush.add(targetBranch);
+        }
+        if (branchList.contains(featureBranch)) {
+            // can be not a branch, but a bookmark
+            branchesToPush.add(featureBranch);
+        }
         ReleaseBranch nextBranch = releaseBranch.copy();
         nextBranch.next(branchList);
         String nextBranchName = nextBranch.getName();
