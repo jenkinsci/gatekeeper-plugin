@@ -6,11 +6,11 @@ import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitSCM;
+import lombok.extern.java.Log;
 import org.apache.tools.ant.taskdefs.email.EmailAddress;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.plugins.gitclient.GitClient;
-import org.paylogic.jenkins.advancedscm.AdvancedSCMManager;
 import org.paylogic.jenkins.advancedscm.Branch;
 import org.paylogic.jenkins.advancedscm.backends.helpers.AdvancedCliGit;
 import org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException;
@@ -23,7 +23,11 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class GitBackend extends BaseBackend implements AdvancedSCMManager {
+/**
+ * Mercurial Implementation of AdvancedSCMManager
+ */
+@Log
+public class GitBackend extends BaseBackend {
 
     private final AbstractBuild build;
     private final Launcher launcher;
@@ -41,6 +45,7 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
         this.rawGit = new AdvancedCliGit(
                 scm, new File(build.getWorkspace().absolutize().getRemote()), listener,
                 build.getEnvironment(listener));
+        this.repoPath = rawGit.getWorkTree();
     }
 
     /**
@@ -138,26 +143,15 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
         }
     }
 
-    /**
-     * Updates workspace to given revision/branch with cleaning.
-     *
-     * @param revision : String with revision, hash of branchname to update to.
-     */
     public void updateClean(String revision) throws AdvancedSCMException {
         update(revision);
         clean();
     }
 
-    /**
-     * Strip out local commits which are not pushed yet.
-     */
     public void stripLocal() throws AdvancedSCMException {
         clean();
     }
 
-    /**
-     * Cleans workspace from artifacts.
-     */
     public void clean() throws AdvancedSCMException {
         try {
             git.clean();
@@ -167,17 +161,8 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
         }
     }
 
-    /**
-     * Merge current workspace with given revision.
-     * Do not forget to commit merge afterwards manually.
-     *
-     * @param revision : String with revision, hash or branchname to merge with.
-     * @param updateTo : String with revision, hash or branchname to update working copy to before actual merge.
-     * @param message : String commit message
-     * @param username : String commit user name (with email)
-     * @return String : Output of merge command (should be empty if all went well)
-     */
-    public String mergeWorkspaceWith(String revision, String updateTo, String message, String username) throws AdvancedSCMException {
+    public void mergeWorkspaceWith(
+            String revision, String updateTo, String message, String username) throws AdvancedSCMException {
         try {
             if (updateTo != null) {
                 update(updateTo);
@@ -198,7 +183,6 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
             git.setAuthor(address.getName(), address.getName());
             git.setCommitter(address.getName(), address.getName());
             git.merge().setRevisionToMerge(rev).execute();
-            return null;
         }
         catch (InterruptedException exception) {
             throw new AdvancedSCMException(exception.toString());
@@ -206,19 +190,14 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
     }
 
     /**
-     * Merge possible current branch's heads.
+     * Merge possible current branch's heads. Not actual for git backend.
      * @param message : String commit message
      * @param username : String commit user name (with email)
-     * @return String : Output of merge command (should be empty if all went well)
      */
-    public String merge(String message, String username) throws AdvancedSCMException {
-        return null;
+    public void merge(String message, String username) throws AdvancedSCMException {
     }
 
-    /**
-     * Executes 'push' command for given branches
-     */
-    public String push(String... branchNames) throws AdvancedSCMException {
+    public void push(String... branchNames) throws AdvancedSCMException {
         List<String> repoBranchNames = getLocalBranchNames();
         try {
             for (String branch: branchNames) {
@@ -226,7 +205,6 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
                     git.push().to(new URIish(git.getRemoteUrl("origin"))).ref(branch).execute();
                 }
             }
-            return null;
         }
         catch (URISyntaxException exception) {
             throw new AdvancedSCMException(exception.toString());
@@ -236,23 +214,12 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
         }
     }
 
-    /**
-     * Executes 'pull' command
-     *
-     * @throws org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException
-     */
-    public String pull() throws AdvancedSCMException {
-        return pull(null, "master");
+    public void pull() throws AdvancedSCMException {
+        pull(null, "master");
     }
 
-    /**
-     * Pulls changes from remotes. Give it a remote to pull changes from there.
-     *
-     * @param remote
-     * @throws org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException
-     */
-    public String pull(String remote) throws AdvancedSCMException {
-        return pull(remote, "master");
+    public void pull(String remote) throws AdvancedSCMException {
+        pull(remote, "master");
     }
 
     /**
@@ -265,14 +232,7 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
         return;
     }
 
-    /**
-     * Pulls from given repository url. Give it a remote to pull changes from there.
-     *
-     * @param remote
-     * @param branch
-     * @throws org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException
-     */
-    public String pull(String remote, String branch) throws AdvancedSCMException {
+    public void pull(String remote, String branch) throws AdvancedSCMException {
         try {
             if (remote == null || remote.isEmpty()) {
                 remote = git.getRemoteUrl("origin");
@@ -281,10 +241,15 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
                 rawGit.launchCommand("remote", "remove", "feature");
             }
             catch (GitException exception) {
+                // when remote is new, can fail, but it's intentional
             }
             rawGit.launchCommand("remote", "add", "-f", "feature", remote);
-            rawGit.launchCommand("fetch", "feature", branch);
-            return null;
+            try {
+                rawGit.launchCommand("fetch", "feature", branch);
+            }
+            catch (GitException exception) {
+                // can be a new local branch, so can fail, but it's intentional
+            }
         }
         catch (InterruptedException exception) {
             throw new AdvancedSCMException(exception.toString());
@@ -294,4 +259,29 @@ public class GitBackend extends BaseBackend implements AdvancedSCMManager {
     public ReleaseBranch getReleaseBranch(String branch) throws ReleaseBranchInvalidException {
         return new ReleaseBranchImpl(branch, "master");
     }
+
+    public ReleaseBranch createReleaseBranch(
+            String branch, String releaseFilePath, String releaseFileContent, String message, String username)
+            throws AdvancedSCMException, ReleaseBranchInvalidException
+    {
+        {
+            try {
+                this.update("master");
+                git.checkout("HEAD", branch);
+                if (releaseFilePath != null && !releaseFilePath.isEmpty()
+                        && releaseFileContent != null && !releaseFileContent.isEmpty()) {
+                    this.createFile(releaseFilePath, releaseFileContent);
+                    git.add(releaseFilePath);
+                    EmailAddress address = new EmailAddress(username);
+                    git.setAuthor(address.getName(), address.getName());
+                    git.setCommitter(address.getName(), address.getName());
+                    git.commit(message);
+                }
+                return getReleaseBranch(branch);
+            } catch (Exception e) {
+                throw new AdvancedSCMException(e.getMessage());
+            }
+        }
+    }
+
 }

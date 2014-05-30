@@ -8,16 +8,19 @@ import hudson.model.TaskListener;
 import hudson.plugins.mercurial.HgExe;
 import hudson.plugins.mercurial.MercurialSCM;
 import hudson.util.ArgumentListBuilder;
+import lombok.Getter;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 
 import javax.annotation.CheckForNull;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 public class AdvancedHgExe extends HgExe {
 
+    @Getter
     private FilePath filePath;
 
     public static int DEFAULT_TIMEOUT = 6 * 60; // 6 minutes (time is in seconds)
@@ -77,8 +80,12 @@ public class AdvancedHgExe extends HgExe {
         return popen(repository, listener, timeout, args, returnCodes);
     }
 
-    public @CheckForNull String branch() throws IOException, InterruptedException {
-        String output = popen(this.filePath, listener, 0, new ArgumentListBuilder("branch"));
+    public @CheckForNull String branch(String... extraArgs) throws IOException, InterruptedException {
+        ArgumentListBuilder builder = new ArgumentListBuilder("branch");
+        for(String item : extraArgs){
+            builder.add(item);
+        }
+        String output = popen(this.filePath, listener, 0, builder);
         listener.getLogger().append(output);
         return output;
     }
@@ -205,6 +212,15 @@ public class AdvancedHgExe extends HgExe {
     public String pullChanges(String otherRepo, String branch) throws IOException, InterruptedException {
         String output = popen(this.filePath, listener, DEFAULT_PUSH_TIMEOUT, new ArgumentListBuilder(
                 "pull", otherRepo, "-r", branch));
+        if (StringUtils.isEmpty(output)) {
+            return "";
+        }
+        listener.getLogger().append(output);
+        return output;
+    }
+
+    public String add(String filename, String content) throws IOException, InterruptedException {
+        String output = popen(filePath, listener, 0, new ArgumentListBuilder("add", filename));
         if (StringUtils.isEmpty(output)) {
             return "";
         }

@@ -65,7 +65,7 @@ public class ReleaseBranchImpl extends ReleaseBranch {
     public void next(List<String> branches) {
         branches = new ArrayList<String>(branches);
         CollectionUtils.filter(branches, new Predicate(){
-            public boolean evaluate(Object input ) {
+            public boolean evaluate(Object input) {
                 return ((String)input).matches(RELEASEBRANCH_REGEX);
             }
         });
@@ -91,6 +91,19 @@ public class ReleaseBranchImpl extends ReleaseBranch {
             return DEFAULT;
         }
         return String.format("r%s%s", df.format(this.year), df.format(this.week));
+    }
+
+    /**
+     * Returns the current release name as String
+     *
+     * @return current release name
+     */
+    @Override
+    public String getReleaseName() throws ReleaseBranchInvalidException {
+        if (this.tip) {
+            throw new ReleaseBranchInvalidException("Cannot provide release name for default branch name");
+        }
+        return String.format("%s%s", df.format(this.year), df.format(this.week));
     }
 
     /**

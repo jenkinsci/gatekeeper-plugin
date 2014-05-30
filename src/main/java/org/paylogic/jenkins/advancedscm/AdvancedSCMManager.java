@@ -55,21 +55,18 @@ public interface AdvancedSCMManager {
     /**
      * Merge current workspace with given revision.
      * @param revision : String with revision, hash or branchname to merge with.
-     * @param revision : String with revision, hash or branchname to merge with.
      * @param updateTo : String with revision, hash or branchname to update working copy to before actual merge.
      * @param message : String commit message
      * @param username : String commit user name (with email)
-     * @return String : Output of merge command (should be empty if all went well)
      */
-    public String mergeWorkspaceWith(String revision, String updateTo, String message, String username) throws AdvancedSCMException;
+    public void mergeWorkspaceWith(String revision, String updateTo, String message, String username) throws AdvancedSCMException;
 
     /**
      * Merge possible current branch's heads.
      * @param message : String commit message
      * @param username : String commit user name (with email)
-     * @return String : Output of merge command (should be empty if all went well)
      */
-    public String merge(String message, String username) throws AdvancedSCMException;
+    public void merge(String message, String username) throws AdvancedSCMException;
 
 
     /**
@@ -83,25 +80,25 @@ public interface AdvancedSCMManager {
     /**
      * Executes 'push' command with -b <branch>
      */
-    public String push(String... branchNames) throws AdvancedSCMException;
+    public void push(String... branchNames) throws AdvancedSCMException;
 
     /**
      * Executes 'pull' command
      * @throws org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException
      */
-    public String pull() throws AdvancedSCMException;
+    public void pull() throws AdvancedSCMException;
 
     /**
      * Pulls changes from remotes. Give it a remote to pull changes from there.
      * @throws org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException
      */
-    public String pull(String remote) throws AdvancedSCMException;
+    public void pull(String remote) throws AdvancedSCMException;
 
     /**
      * Pulls from given repository url. Give it a remote to pull changes from there.
      * @throws org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException
      */
-    public String pull(String remote, String branch) throws AdvancedSCMException;
+    public void pull(String remote, String branch) throws AdvancedSCMException;
 
     /**
      * Get release branch from given branch name.
@@ -110,4 +107,29 @@ public interface AdvancedSCMManager {
      */
     public ReleaseBranch getReleaseBranch(String branch) throws ReleaseBranchInvalidException;
 
+    /**
+     * Ensure the release branch exists.
+     * @param branch : String branch name
+     * @param releaseFilePath: String relative path of the release file
+     * @param releaseFileContent : String release file content
+     * @param message: String commit message to add release file
+     * @param username: String username of the commit commit
+     * @throws org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException
+     */
+    public void ensureReleaseBranch(
+            String branch, String releaseFilePath, String releaseFileContent, String message, String username)
+            throws AdvancedSCMException, ReleaseBranchInvalidException;
+
+    /**
+     * Create the release branch.
+     * @param branch : String branch name
+     * @param releaseFilePath: String relative path of the release file
+     * @param releaseFileContent : String release file content
+     * @param message: String commit message to add release file
+     * @param username: String username of the commit commit
+     * @throws org.paylogic.jenkins.advancedscm.exceptions.AdvancedSCMException
+     */
+    public ReleaseBranch createReleaseBranch(
+            String branch, String releaseFilePath, String releaseFileContent, String message, String username)
+            throws AdvancedSCMException, ReleaseBranchInvalidException;
 }

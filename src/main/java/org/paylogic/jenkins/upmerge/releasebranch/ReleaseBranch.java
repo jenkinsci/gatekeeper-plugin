@@ -42,6 +42,12 @@ public abstract class ReleaseBranch implements ExtensionPoint {
     public abstract String getName();
 
     /**
+     * Returns the current release as String
+     * @return current release name
+     */
+    public abstract String getReleaseName() throws ReleaseBranchInvalidException;
+
+    /**
      * Create a new ReleaseBranch object with the current release branch.
      * @return new ReleaseBranch
      */

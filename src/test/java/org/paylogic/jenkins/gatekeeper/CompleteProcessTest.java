@@ -9,6 +9,7 @@ import hudson.plugins.git.GitSCM;
 import hudson.plugins.git.UserRemoteConfig;
 import hudson.plugins.mercurial.MercurialSCM;
 import lombok.extern.java.Log;
+import org.apache.commons.io.IOUtils;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.junit.Before;
 import org.junit.Rule;
@@ -20,10 +21,13 @@ import org.paylogic.jenkins.advancedscm.MercurialRule;
 import org.paylogic.jenkins.upmerge.UpmergeBuilder;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 @Log
 public class CompleteProcessTest {
@@ -67,15 +71,14 @@ public class CompleteProcessTest {
         m.hg(repo, "branch", "c3");
         m.touchAndCommit(repo, "c3");
 
-        GatekeeperMerge mergeBuilder = new GatekeeperMerge();
-        UpmergeBuilder upmergeBuilder = new UpmergeBuilder();
+        GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner", null, null);
+        UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner");
         GatekeeperPush pushBuilder = new GatekeeperPush();
 
         ArrayList<ParameterValue> parameters = new ArrayList<ParameterValue>();
         parameters.add(new StringParameterValue("TARGET_BRANCH", "r1336"));
         parameters.add(new StringParameterValue("ORIGINAL_BRANCH", "r1336"));
         parameters.add(new StringParameterValue("FEATURE_BRANCH", "c3"));
-        parameters.add(new StringParameterValue("COMMIT_USER_NAME", "JenkinsTestRunner"));
 
         p.getBuildersList().add(mergeBuilder);
         p.getBuildersList().add(upmergeBuilder);
@@ -104,9 +107,9 @@ public class CompleteProcessTest {
         assert new File(repo, "r1338").exists();
         assert new File(repo, "r1340").exists();
 
-        m.searchLog(repo, "Merge r1336 with c3");
-        m.searchLog(repo, "Merge r1338 with r1336");
-        m.searchLog(repo, "Merge r1340 with r1338");
+        assert !m.searchLog(repo, "[Jenkins Integration Merge] Merged c3 into r1336").isEmpty();
+        assert !m.searchLog(repo, "[Jenkins Upmerging] Merged r1336 into r1338").isEmpty();
+        assert !m.searchLog(repo, "[Jenkins Upmerging] Merged r1338 into r1340").isEmpty();
 
         //check that c3 feature branch is closed
         assertArrayEquals(new String[] {"default", "r1336", "r1338", "r1340"}, m.getBranches(repo));
@@ -142,15 +145,14 @@ public class CompleteProcessTest {
         client.checkout("HEAD", "c3");
         g.touchAndCommit(repo, "c3");
 
-        GatekeeperMerge mergeBuilder = new GatekeeperMerge();
-        UpmergeBuilder upmergeBuilder = new UpmergeBuilder();
+        GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner", null, null);
+        UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner");
         GatekeeperPush pushBuilder = new GatekeeperPush();
 
         ArrayList<ParameterValue> parameters = new ArrayList<ParameterValue>();
         parameters.add(new StringParameterValue("TARGET_BRANCH", "r1336"));
         parameters.add(new StringParameterValue("ORIGINAL_BRANCH", "r1336"));
         parameters.add(new StringParameterValue("FEATURE_BRANCH", "c3"));
-        parameters.add(new StringParameterValue("COMMIT_USER_NAME", "JenkinsTestRunner"));
 
         p.getBuildersList().add(mergeBuilder);
         p.getBuildersList().add(upmergeBuilder);
@@ -183,6 +185,124 @@ public class CompleteProcessTest {
         assertArrayEquals(new String[]{"c3", "master", "r1336", "r1338", "r1340"}, g.getBranches(repo));
     }
 
+    @Test
+    public void testGatekeeperingNewReleaseBranchMercurial() throws Exception {
+        /*
+         * So:
+         * set up a repo with 1 release and 1 feature branches
+         * inject parameters TARGET_BRANCH and stuff
+         * run job with gatekeeper, upmerge and push tasks
+         * assert file from feature branch is in latest release branch
+         */
+        FreeStyleProject p = j.createFreeStyleProject();
+        p.setScm(new MercurialSCM(null, repo.getPath(), "tip", null, null, null, false));
+
+        // Init repo with 1 release and 1 feature branches.
+        m.hg(repo, "init");
+        m.touchAndCommit(repo, "base");
+        m.hg(repo, "branch", "r1336");
+        m.touchAndCommit(repo, "r1336");
+        m.hg(repo, "branch", "c3");
+        m.touchAndCommit(repo, "c3");
+
+        GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner", "release.txt", "{{release}}");
+        UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner");
+        GatekeeperPush pushBuilder = new GatekeeperPush();
+
+        ArrayList<ParameterValue> parameters = new ArrayList<ParameterValue>();
+        parameters.add(new StringParameterValue("TARGET_BRANCH", "r1338"));
+        parameters.add(new StringParameterValue("ORIGINAL_BRANCH", "r1336"));
+        parameters.add(new StringParameterValue("FEATURE_BRANCH", "c3"));
+
+        p.getBuildersList().add(mergeBuilder);
+        p.getBuildersList().add(upmergeBuilder);
+        p.getBuildersList().add(pushBuilder);
+        m.buildAndCheck(p, "c3", new ParametersAction(parameters));
+
+        // Check more files, we can do this on original repo, so we make sure that builder pushed changes.
+        m.hg(repo, "update", "r1338");
+        assert new File(repo, "c3").exists();
+        assert new File(repo, "r1336").exists();
+        File release = new File(repo, "release.txt");
+        assert release.exists();
+        FileInputStream inputStream = new FileInputStream(release);
+        try {
+            String contents = IOUtils.toString(inputStream);
+            assertEquals(contents, "1338");
+        } finally {
+            inputStream.close();
+        }
+
+        m.hg(repo, "update", "default");
+        assert new File(repo, "c3").exists();
+        assert new File(repo, "r1336").exists();
+
+        assert !m.searchLog(repo, "[Jenkins Integration Merge] Merged c3 into r1338").isEmpty();
+        assert !m.searchLog(repo, "[Jenkins Upmerging] Merged r1338 into default").isEmpty();
+
+        //check that c3 feature branch is closed
+        assertArrayEquals(new String[] {"default", "r1336", "r1338"}, m.getBranches(repo));
+    }
+
+    @Test
+    public void testGatekeeperingNewReleaseBranchGit() throws Exception {
+        /*
+         * So:
+         * set up a repo with 1 release and 1 feature branches
+         * inject parameters TARGET_BRANCH and stuff
+         * run job with gatekeeper, upmerge and push tasks
+         * assert file from feature branch is in latest release branch
+         */
+        FreeStyleProject p = j.createFreeStyleProject();
+        List<UserRemoteConfig> remotes = new ArrayList<UserRemoteConfig>();
+        remotes.add(new UserRemoteConfig(repo.getPath(), "origin", "master", null));
+        List<BranchSpec> branches = new ArrayList<BranchSpec>();
+        branches.add(new BranchSpec("master"));
+        p.setScm(new GitSCM(remotes, branches, false, null, null, null, null));
+
+        // Init repo with 1 release and 1 feature branches.
+        GitClient client = g.gitClient(repo);
+        client.init();
+        g.touchAndCommit(repo, "base");
+        client.checkout("HEAD", "r1336");
+        g.touchAndCommit(repo, "r1336");
+        client.checkout("HEAD", "c3");
+        g.touchAndCommit(repo, "c3");
+
+        GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner", "release.txt", "{{release}}");
+        UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner");
+        GatekeeperPush pushBuilder = new GatekeeperPush();
+
+        ArrayList<ParameterValue> parameters = new ArrayList<ParameterValue>();
+        parameters.add(new StringParameterValue("TARGET_BRANCH", "r1338"));
+        parameters.add(new StringParameterValue("ORIGINAL_BRANCH", "r1336"));
+        parameters.add(new StringParameterValue("FEATURE_BRANCH", "c3"));
+
+        p.getBuildersList().add(mergeBuilder);
+        p.getBuildersList().add(upmergeBuilder);
+        p.getBuildersList().add(pushBuilder);
+        g.buildAndCheck(p, "c3", new ParametersAction(parameters));
+
+        // Check more files, we can do this on original repo, so we make sure that builder pushed changes.
+        client.checkout().ref("r1338").execute();
+        client.clean();
+        assert new File(repo, "c3").exists();
+        assert new File(repo, "r1336").exists();
+        File release = new File(repo, "release.txt");
+        assert release.exists();
+        FileInputStream inputStream = new FileInputStream(release);
+        try {
+            String contents = IOUtils.toString(inputStream);
+            assertEquals(contents, "1338");
+        } finally {
+            inputStream.close();
+        }
+
+        client.checkout().ref("master").execute();
+        client.clean();
+        assert new File(repo, "c3").exists();
+        assert new File(repo, "r1336").exists();
+    }
 
     @Test
     public void testGatekeeperingFromDifferentRepoAndUpmergingMercurial() throws Exception {
@@ -222,10 +342,9 @@ public class CompleteProcessTest {
         parameters.add(new StringParameterValue("FEATURE_BRANCH", "c3"));
         parameters.add(new StringParameterValue("APPROVED_REVISION", okRevision));
         parameters.add(new StringParameterValue("REPO_URL", repo2.getAbsolutePath()));
-        parameters.add(new StringParameterValue("COMMIT_USER_NAME", "JenkinsTestRunner"));
 
-        p.getBuildersList().add(new GatekeeperMerge());
-        p.getBuildersList().add(new UpmergeBuilder());
+        p.getBuildersList().add(new GatekeeperMerge("JenkinsTestRunner", null, null));
+        p.getBuildersList().add(new UpmergeBuilder("JenkinsTestRunner"));
         p.getBuildersList().add(new GatekeeperPush());
 
         m.buildAndCheck(p, "c3", new ParametersAction(parameters));
@@ -252,9 +371,8 @@ public class CompleteProcessTest {
         assert new File(repo, "r1338").exists();
         assert new File(repo, "r1340").exists();
 
-        m.searchLog(repo, "Merge r1336 with c3");
-        m.searchLog(repo, "Merge r1338 with r1336");
-        m.searchLog(repo, "Merge r1340 with r1338");
+        assert !m.searchLog(repo, "[Jenkins Integration Merge] Merged c3 into r1336").isEmpty();
+        assert !m.searchLog(repo, "[Jenkins Upmerging] Merged r1336 into r1338").isEmpty();
     }
 
     @Test
@@ -300,17 +418,14 @@ public class CompleteProcessTest {
         parameters.add(new StringParameterValue("FEATURE_BRANCH", "c3"));
         parameters.add(new StringParameterValue("APPROVED_REVISION", okRevision));
         parameters.add(new StringParameterValue("REPO_URL", repo2.getAbsolutePath()));
-        parameters.add(new StringParameterValue("COMMIT_USER_NAME", "JenkinsTestRunner"));
 
-        p.getBuildersList().add(new GatekeeperMerge());
-        p.getBuildersList().add(new UpmergeBuilder());
+        p.getBuildersList().add(new GatekeeperMerge("JenkinsTestRunner", null, null));
+        p.getBuildersList().add(new UpmergeBuilder("JenkinsTestRunner"));
         p.getBuildersList().add(new GatekeeperPush());
 
         g.buildAndCheck(p, "c3", new ParametersAction(parameters));
 
         // Check more files, we can do this on original repo, so we make sure that builder pushed changes.
-        // Check more files, we can do this on original repo, so we make sure that builder pushed changes.
-
         client.checkout().ref("r1336").execute();
         client.clean();
         assert new File(repo, "c3").exists();
