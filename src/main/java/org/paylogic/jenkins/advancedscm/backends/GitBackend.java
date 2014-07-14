@@ -238,7 +238,7 @@ public class GitBackend extends BaseBackend {
                 remote = git.getRemoteUrl("origin");
             }
             try {
-                rawGit.launchCommand("remote", "remove", "feature");
+                rawGit.launchCommand("remote", "rm", "feature");
             }
             catch (GitException exception) {
                 // when remote is new, can fail, but it's intentional
