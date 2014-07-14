@@ -243,7 +243,7 @@ public class GitBackend extends BaseBackend {
             catch (GitException exception) {
                 // when remote is new, can fail, but it's intentional
             }
-            rawGit.launchCommand("remote", "add", "-f", "feature", remote);
+            rawGit.launchCommand("remote", "add", "feature", remote);
             try {
                 rawGit.launchCommand("fetch", "feature", branch);
             }
