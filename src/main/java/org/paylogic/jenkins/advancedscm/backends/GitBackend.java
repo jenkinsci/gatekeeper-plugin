@@ -41,7 +41,7 @@ public class GitBackend extends BaseBackend {
         this.launcher = launcher;
         this.listener = listener;
         this.scm = scm;
-        this.git = scm.createClient(listener, build.getEnvironment(listener), build);
+        this.git = scm.createClient(listener, build.getEnvironment(listener), build, build.getWorkspace());
         this.rawGit = new AdvancedCliGit(
                 scm, new File(build.getWorkspace().absolutize().getRemote()), listener,
                 build.getEnvironment(listener));

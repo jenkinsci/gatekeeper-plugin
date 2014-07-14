@@ -102,7 +102,7 @@ public class GatekeeperMerge extends Builder {
             LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
                     okRevision + " from " + featureRepoUrl + " to " + targetBranch + ".");
         } else {
-            amm.pull("", featureBranch);
+            amm.pull(featureRepoUrl, featureBranch);
             amm.update(targetBranch);
             amm.mergeWorkspaceWith(featureBranch, null, "[Jenkins Integration Merge] Merged " + featureBranch + " into "
                     + targetBranch,
