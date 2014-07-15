@@ -112,7 +112,6 @@ public class UpmergeBuilder extends Builder {
         nextBranch.next(branchList);
         String nextBranchName = nextBranch.getName();
         while(nextBranchName != releaseBranchName) {
-            amm.update(nextBranchName);
             amm.mergeWorkspaceWith(releaseBranchName, nextBranchName,
                     "[Jenkins Upmerging] Merged " + releaseBranchName + " into " + nextBranchName,
                     commitUsername);

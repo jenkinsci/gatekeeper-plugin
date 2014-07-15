@@ -82,7 +82,7 @@ public class GatekeeperMerge extends Builder {
         AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
         amm.stripLocal();
 
-        listener.getLogger().append("Ensuring target release branch" + targetBranch + ".\n");
+        listener.getLogger().append("Ensuring target release branch " + targetBranch + ".\n");
         ensureReleaseBranch(amm, targetBranch);
 
         /* Actual Gatekeepering logic. Seperated to work differently when Rietveld support is active. */
@@ -95,7 +95,6 @@ public class GatekeeperMerge extends Builder {
             /* Actual gatekeepering commands.*/
             amm.pull(featureRepoUrl, featureBranch);
             amm.updateClean(targetBranch);
-            amm.clean();
             amm.mergeWorkspaceWith(okRevision, null, "[Jenkins Integration Merge] Merged " + featureBranch + " into "
                     + targetBranch,
                     commitUsername);
@@ -103,7 +102,7 @@ public class GatekeeperMerge extends Builder {
                     okRevision + " from " + featureRepoUrl + " to " + targetBranch + ".");
         } else {
             amm.pull(featureRepoUrl, featureBranch);
-            amm.update(targetBranch);
+            amm.updateClean(targetBranch);
             amm.mergeWorkspaceWith(featureBranch, null, "[Jenkins Integration Merge] Merged " + featureBranch + " into "
                     + targetBranch,
                     commitUsername);

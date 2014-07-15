@@ -43,7 +43,7 @@ public class GitBackend extends BaseBackend {
         this.scm = scm;
         this.git = scm.createClient(listener, build.getEnvironment(listener), build, build.getWorkspace());
         this.rawGit = new AdvancedCliGit(
-                scm, new File(build.getWorkspace().absolutize().getRemote()), listener,
+                scm, launcher, build.getBuiltOn(), new File(build.getWorkspace().absolutize().getRemote()), listener,
                 build.getEnvironment(listener));
         this.repoPath = rawGit.getWorkTree();
     }
@@ -114,7 +114,7 @@ public class GitBackend extends BaseBackend {
      */
     public String getBranch() throws AdvancedSCMException {
         try {
-            return rawGit.launchCommand("rev-parse", "--abbrev-ref", "HEAD");
+            return rawGit.launchCommand("rev-parse", "--abbrev-ref", "HEAD").trim();
         }
         catch (InterruptedException exception) {
             throw new AdvancedSCMException(exception.toString());
@@ -127,19 +127,18 @@ public class GitBackend extends BaseBackend {
      * @param revision : String with revision, hash or branchname to update to.
      */
     public void update(String revision) throws AdvancedSCMException {
-        if (getBranchNames(false).contains(revision)) {
+        if (!revision.isEmpty() && !getLocalBranchNames().contains(revision)) {
             try {
-                git.checkout("HEAD", revision);
+                rawGit.launchCommand("checkout", "-b", revision, "--track", "origin/" + revision);
             }
             catch (Exception exception) {
-
             }
-        }
-        try {
-            git.checkout().ref(revision).execute();
-        }
-        catch (InterruptedException exception) {
-            throw new AdvancedSCMException(exception.toString());
+        } else {
+            try {
+                git.checkout().ref(revision).execute();
+            } catch (InterruptedException exception) {
+                throw new AdvancedSCMException(exception.toString());
+            }
         }
     }
 
@@ -150,6 +149,16 @@ public class GitBackend extends BaseBackend {
 
     public void stripLocal() throws AdvancedSCMException {
         clean();
+        List<String> repoBranchNames = getLocalBranchNames();
+        for (String branch: repoBranchNames) {
+            git.checkout().branch(branch);
+            clean(branch);
+            try {
+                rawGit.launchCommand("checkout", "-f");
+            }
+            catch (InterruptedException exception) {
+            }
+        }
     }
 
     public void clean() throws AdvancedSCMException {
@@ -161,22 +170,38 @@ public class GitBackend extends BaseBackend {
         }
     }
 
+    public void clean(String revision) throws AdvancedSCMException {
+        update(revision);
+        try {
+            rawGit.launchCommand("reset", "--hard", "origin/" + revision);
+        } catch (GitException exception) {
+
+        }
+        catch (InterruptedException exception) {
+            throw new AdvancedSCMException(exception.toString());
+        }
+        clean();
+    }
+
     public void mergeWorkspaceWith(
             String revision, String updateTo, String message, String username) throws AdvancedSCMException {
         try {
-            if (updateTo != null) {
-                update(updateTo);
-            }
             ObjectId rev;
-            try {
-                rev = git.revParse("feature/" + revision);
+            if (updateTo != null) {
+                updateClean(updateTo);
+                rev = git.revParse(revision);
             }
-            catch (GitException exception) {
+            else {
                 try {
-                    rev = git.revParse("origin/" + revision);
+                    rev = git.revParse("feature/" + revision);
                 }
-                catch (GitException exc) {
-                    rev = git.revParse(revision);
+                catch (GitException exception) {
+                    try {
+                        rev = git.revParse("origin/" + revision);
+                    }
+                    catch (GitException exc) {
+                        rev = git.revParse(revision);
+                    }
                 }
             }
             EmailAddress address = new EmailAddress(username);
