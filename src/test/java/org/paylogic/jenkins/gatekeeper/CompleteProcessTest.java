@@ -302,6 +302,9 @@ public class CompleteProcessTest {
         client.clean();
         assert new File(repo, "c3").exists();
         assert new File(repo, "r1336").exists();
+
+        assert !g.searchLog(repo, "[Jenkins Integration Merge] Merged c3 into r1338").isEmpty();
+        assert !g.searchLog(repo, "[Jenkins Upmerging] Merged r1338 into master").isEmpty();
     }
 
     @Test
@@ -397,18 +400,19 @@ public class CompleteProcessTest {
         // Init repo with 3 releases and feature branch.
         GitClient client = g.gitClient(repo);
         client.init();
+        g.allowPush(client);
         g.touchAndCommit(repo, "base");
-        client.checkout("HEAD", "r1336");
+        client.checkout().branch("r1336").execute();
         g.touchAndCommit(repo, "r1336");
-        client.checkout("HEAD", "r1338");
+        client.checkout().branch("r1338").execute();
         g.touchAndCommit(repo, "r1338");
-        client.checkout("HEAD", "r1340");
+        client.checkout().branch("r1340").execute();
         g.touchAndCommit(repo, "r1340");
 
         GitClient client2 = g.gitClient(repo2);
         client2.clone(repo.getAbsolutePath(), "origin", false, null);
-        client2.checkout().branch("r1336");
-        client2.checkout("HEAD", "c3");
+        client2.checkout().branch("r1336").execute();
+        client2.checkout().branch("c3").execute();
         g.touchAndCommit(repo2, "c3");
 
         final String okRevision = g.getLastChangesetId(repo2);
@@ -447,6 +451,8 @@ public class CompleteProcessTest {
         assert new File(repo, "r1336").exists();
         assert new File(repo, "r1338").exists();
         assert new File(repo, "r1340").exists();
+        assert !g.searchLog(repo, "[Jenkins Integration Merge] Merged c3 into r1336").isEmpty();
+        assert !g.searchLog(repo, "[Jenkins Upmerging] Merged r1336 into r1338").isEmpty();
     }
 
 }

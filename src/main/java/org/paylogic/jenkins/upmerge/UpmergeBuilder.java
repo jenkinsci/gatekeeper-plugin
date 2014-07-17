@@ -99,7 +99,7 @@ public class UpmergeBuilder extends Builder {
         // Pull to also get new releases created during tests.
         amm.pull(null, targetBranch);
         amm.update("");
-        amm.merge("[Jenkins Upmerging] Merged heads on " + releaseBranchName, commitUsername);
+        amm.mergeHeads("[Jenkins Upmerging] Merged heads on " + releaseBranchName, commitUsername);
 
         List<String> branchList = amm.getBranchNames(true);
         List<String> branchesToPush = new ArrayList<String>();
@@ -112,10 +112,10 @@ public class UpmergeBuilder extends Builder {
         nextBranch.next(branchList);
         String nextBranchName = nextBranch.getName();
         while(nextBranchName != releaseBranchName) {
-            amm.mergeWorkspaceWith(releaseBranchName, nextBranchName,
-                    "[Jenkins Upmerging] Merged " + releaseBranchName + " into " + nextBranchName,
+            amm.mergeWorkspaceWith(releaseBranchName, nextBranchName);
+            amm.commit("[Jenkins Upmerging] Merged " + releaseBranchName + " into " + nextBranchName,
                     commitUsername);
-            amm.merge("[Jenkins Upmerging] Merged heads on " + nextBranchName, commitUsername);
+            amm.mergeHeads("[Jenkins Upmerging] Merged heads on " + nextBranchName, commitUsername);
             LogMessageSearcher.logMessage(
                     listener, "Upmerged " + releaseBranchName + " into " + nextBranchName + ".");
             branchesToPush.add(nextBranchName);

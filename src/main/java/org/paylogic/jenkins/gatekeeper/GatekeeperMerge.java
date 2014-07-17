@@ -95,17 +95,13 @@ public class GatekeeperMerge extends Builder {
             /* Actual gatekeepering commands.*/
             amm.pull(featureRepoUrl, featureBranch);
             amm.updateClean(targetBranch);
-            amm.mergeWorkspaceWith(okRevision, null, "[Jenkins Integration Merge] Merged " + featureBranch + " into "
-                    + targetBranch,
-                    commitUsername);
+            amm.mergeWorkspaceWith(okRevision, null);
             LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
                     okRevision + " from " + featureRepoUrl + " to " + targetBranch + ".");
         } else {
             amm.pull(featureRepoUrl, featureBranch);
             amm.updateClean(targetBranch);
-            amm.mergeWorkspaceWith(featureBranch, null, "[Jenkins Integration Merge] Merged " + featureBranch + " into "
-                    + targetBranch,
-                    commitUsername);
+            amm.mergeWorkspaceWith(featureBranch, null);
             LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
                     featureBranch + " to " + targetBranch + ".");
         }
@@ -134,12 +130,15 @@ public class GatekeeperMerge extends Builder {
     }
 
     private void commit(AdvancedSCMManager amm, BuildListener listener, EnvVars envVars, String targetBranch, String featureBranch, String commitUsername) throws AdvancedSCMException {
+        amm.commit("[Jenkins Integration Merge] Merged " + featureBranch + " into "
+                        + targetBranch,
+                commitUsername);
         if (amm.getBranchNames(false).contains(featureBranch)) {
             // we have to close feature branch
             amm.closeBranch(featureBranch, "[Jenkins Integration Merge] Closing feature branch " + featureBranch, commitUsername);
             amm.updateClean(targetBranch);
         }
-        LogMessageSearcher.logMessage(listener, "Gatekeeper merge was committed, because tests seem to be successful.");
+        LogMessageSearcher.logMessage(listener, "Gatekeeper merge was committed.");
     }
 
     @Override

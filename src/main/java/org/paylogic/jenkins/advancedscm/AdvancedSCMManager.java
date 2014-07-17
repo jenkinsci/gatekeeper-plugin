@@ -56,17 +56,22 @@ public interface AdvancedSCMManager {
      * Merge current workspace with given revision.
      * @param revision : String with revision, hash or branchname to merge with.
      * @param updateTo : String with revision, hash or branchname to update working copy to before actual merge.
-     * @param message : String commit message
-     * @param username : String commit user name (with email)
      */
-    public void mergeWorkspaceWith(String revision, String updateTo, String message, String username) throws AdvancedSCMException;
+    public void mergeWorkspaceWith(String revision, String updateTo) throws AdvancedSCMException;
+
+    /**
+     * Commit current workspace.
+    * @param message : String commit message
+    * @param username : String commit user name (with email)
+    */
+    public void commit(String message, String username) throws AdvancedSCMException;
 
     /**
      * Merge possible current branch's heads.
      * @param message : String commit message
      * @param username : String commit user name (with email)
      */
-    public void merge(String message, String username) throws AdvancedSCMException;
+    public void mergeHeads(String message, String username) throws AdvancedSCMException;
 
 
     /**

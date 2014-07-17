@@ -51,6 +51,7 @@ public class SCMManagerFactory {
                             if (extension instanceof RelativeTargetDirectory) {
                                 String targetDir = ((RelativeTargetDirectory) extension).getRelativeTargetDir();
                                 if (targetDir  != null && !targetDir .isEmpty() && targetDir == givenRepoSubdir) {
+                                    l.append("Chosen MultiSCM with Git Backend");
                                     return new GitBackend(build, launcher, listener, (GitSCM) s);
                                 }
                             }

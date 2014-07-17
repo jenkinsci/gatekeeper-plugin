@@ -15,6 +15,7 @@ import hudson.plugins.git.Branch;
 import hudson.plugins.git.GitTagAction;
 import hudson.scm.PollingResult;
 import hudson.util.StreamTaskListener;
+import org.jenkinsci.plugins.gitclient.CliGitAPIImpl;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
 import org.junit.Assume;
@@ -66,7 +67,11 @@ public final class GitRule extends ExternalResource {
     }
 
     public GitClient gitClient(File repository) throws Exception {
-        return new Git(listener, new EnvVars()).in(repository).getClient();
+        return new Git(listener, new EnvVars()).in(repository).using("git").getClient();
+    }
+
+    public void allowPush(GitClient client) throws InterruptedException{
+        ((CliGitAPIImpl)client).launchCommand("config", "receive.denyCurrentBranch", "ignore");
     }
 
     public void touchAndCommit(File repo, String... names) throws Exception {
@@ -121,10 +126,9 @@ public final class GitRule extends ExternalResource {
     }
 
     public String searchLog(File repo, String query) throws Exception {
-        StringWriter sw = new StringWriter();
-        gitClient(repo).changelog().to(sw).execute();
+        String sw = ((CliGitAPIImpl)gitClient(repo)).launchCommand("log");
         StringWriter output = new StringWriter();
-        for (String s: sw.toString().split("\n")) {
+        for (String s: sw.split("\n")) {
             if (s.contains(query)) {
                 output.append("s");
             }

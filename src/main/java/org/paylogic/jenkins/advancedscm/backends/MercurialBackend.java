@@ -158,14 +158,13 @@ public class MercurialBackend extends BaseBackend {
         }
     }
 
-    public void mergeWorkspaceWith(String revision, String updateTo, String message, String username) throws AdvancedSCMException {
+    public void mergeWorkspaceWith(String revision, String updateTo) throws AdvancedSCMException {
         if (updateTo != null) {
             this.updateClean(updateTo);
         }
         String output = "";
         try {
             output = this.advancedHgExe.merge(revision);
-            output += this.advancedHgExe.commit(message, username);
         } catch (Exception e) {
             log.log(Level.SEVERE, "Exception occurred during merge of workspace with " + revision + ".", e);
             l.append(e.toString());
@@ -185,11 +184,10 @@ public class MercurialBackend extends BaseBackend {
         }
     }
 
-    public void merge(String message, String username) throws AdvancedSCMException {
+    public void mergeHeads(String message, String username) throws AdvancedSCMException {
         String output = "";
         try {
             output = this.advancedHgExe.merge("");
-            output += this.advancedHgExe.commit(message, username);
         } catch (Exception e) {
             log.log(Level.SEVERE, "Exception occurred during merge of the heads.", e);
             l.append(e.toString());
@@ -202,8 +200,20 @@ public class MercurialBackend extends BaseBackend {
             }
         }
 
-        if (output.contains("abort: merging") && output.contains("has no effect")) {
-            throw new MergeWontHaveEffectException(output);
+        commit(message, username);
+    }
+
+    public void commit(String message, String username) throws AdvancedSCMException {
+        String output = "";
+        try {
+            output = this.advancedHgExe.commit(message, username);
+        } catch (Exception e) {
+            log.log(Level.SEVERE, "Exception occurred during commit.", e);
+            l.append(e.toString());
+            throw new AdvancedSCMException(e.getMessage());
+        }
+        if (output.contains("abort:")) {
+            throw new AdvancedSCMException(output);
         }
     }
 

@@ -50,7 +50,8 @@ public class BasicMercurialTest {
                 try {
                     AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
                     amm.update("r1336");
-                    amm.mergeWorkspaceWith("c3", null, "merge c3", "test <testuser@example.com>");
+                    amm.mergeWorkspaceWith("c3", null);
+                    amm.commit("merge c3", "test <testuser@example.com>");
                     return true;
                 } catch (Exception e) {
                     e.printStackTrace(listener.getLogger());
@@ -92,7 +93,8 @@ public class BasicMercurialTest {
                 try {
                     AdvancedSCMManager amm = SCMManagerFactory.getManager(build, launcher, listener);
                     amm.update("r1336");
-                    amm.mergeWorkspaceWith("c3", null, "merge c3", "test <testuser@example.com>");
+                    amm.mergeWorkspaceWith("c3", null);
+                    amm.commit("merge c3", "test <testuser@example.com>");
                     return true;
                 } catch (Exception e) {
                     e.printStackTrace(listener.getLogger());

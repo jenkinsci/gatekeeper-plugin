@@ -1,11 +1,14 @@
 package org.paylogic.jenkins.advancedscm.backends;
 
 
+import hudson.EnvVars;
+import hudson.FilePath;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.BuildListener;
 import hudson.plugins.git.GitException;
 import hudson.plugins.git.GitSCM;
+import hudson.plugins.git.extensions.GitSCMExtension;
 import lombok.extern.java.Log;
 import org.apache.tools.ant.taskdefs.email.EmailAddress;
 import org.eclipse.jgit.lib.ObjectId;
@@ -41,9 +44,17 @@ public class GitBackend extends BaseBackend {
         this.launcher = launcher;
         this.listener = listener;
         this.scm = scm;
-        this.git = scm.createClient(listener, build.getEnvironment(listener), build, build.getWorkspace());
+        FilePath path = build.getWorkspace();
+        EnvVars environment = build.getEnvironment(listener);
+        for (GitSCMExtension ext : scm.getExtensions()) {
+            FilePath r = ext.getWorkingDirectory(scm, build.getParent(), path, environment, listener);
+            if (r!=null) {
+                path = r;
+            }
+        }
+        this.git = scm.createClient(listener, environment, build, path);
         this.rawGit = new AdvancedCliGit(
-                scm, launcher, build.getBuiltOn(), new File(build.getWorkspace().absolutize().getRemote()), listener,
+                scm, launcher, build.getBuiltOn(), new File(path.absolutize().getRemote()), listener,
                 build.getEnvironment(listener));
         this.repoPath = rawGit.getWorkTree();
     }
@@ -132,6 +143,7 @@ public class GitBackend extends BaseBackend {
                 rawGit.launchCommand("checkout", "-b", revision, "--track", "origin/" + revision);
             }
             catch (Exception exception) {
+                throw new AdvancedSCMException(exception.toString());
             }
         } else {
             try {
@@ -184,7 +196,7 @@ public class GitBackend extends BaseBackend {
     }
 
     public void mergeWorkspaceWith(
-            String revision, String updateTo, String message, String username) throws AdvancedSCMException {
+            String revision, String updateTo) throws AdvancedSCMException {
         try {
             ObjectId rev;
             if (updateTo != null) {
@@ -204,10 +216,19 @@ public class GitBackend extends BaseBackend {
                     }
                 }
             }
+            rawGit.launchCommand("merge", "--no-commit", "--no-ff", rev.getName());
+        }
+        catch (InterruptedException exception) {
+            throw new AdvancedSCMException(exception.toString());
+        }
+    }
+
+    public void commit(String message, String username) throws AdvancedSCMException {
+        try {
             EmailAddress address = new EmailAddress(username);
             git.setAuthor(address.getName(), address.getName());
             git.setCommitter(address.getName(), address.getName());
-            git.merge().setRevisionToMerge(rev).execute();
+            git.commit(message);
         }
         catch (InterruptedException exception) {
             throw new AdvancedSCMException(exception.toString());
@@ -219,7 +240,7 @@ public class GitBackend extends BaseBackend {
      * @param message : String commit message
      * @param username : String commit user name (with email)
      */
-    public void merge(String message, String username) throws AdvancedSCMException {
+    public void mergeHeads(String message, String username) throws AdvancedSCMException {
     }
 
     public void push(String... branchNames) throws AdvancedSCMException {
