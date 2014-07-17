@@ -10,6 +10,8 @@ import hudson.tasks.BuildStepDescriptor;
 import hudson.tasks.Builder;
 import hudson.util.FormValidation;
 import lombok.extern.java.Log;
+import org.apache.commons.lang.StringUtils;
+import org.jenkinsci.plugins.envinject.EnvInjectBuilderContributionAction;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
 import org.paylogic.jenkins.LogMessageSearcher;
@@ -26,6 +28,8 @@ import com.github.jknack.handlebars.Context;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 
 
@@ -106,6 +110,11 @@ public class GatekeeperMerge extends Builder {
                     featureBranch + " to " + targetBranch + ".");
         }
         commit(amm, listener, envVars, targetBranch, featureBranch, commitUsername);
+
+        // pass branches to push to later build actions
+        Map<String, String> vars = new HashMap<String, String>();
+        vars.put("BRANCHES_TO_PUSH", targetBranch);
+        build.addAction(new EnvInjectBuilderContributionAction(vars));
         return true;
     }
 
