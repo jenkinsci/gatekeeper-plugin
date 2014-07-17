@@ -36,8 +36,7 @@ public class GitBackend extends BaseBackend {
     private final Launcher launcher;
     private final BuildListener listener;
     private final GitSCM scm;
-    private final GitClient git;
-    private final AdvancedCliGit rawGit;
+    private final AdvancedCliGit git;
 
     public GitBackend(AbstractBuild build, Launcher launcher, BuildListener listener, GitSCM scm) throws Exception {
         this.build = build;
@@ -52,11 +51,10 @@ public class GitBackend extends BaseBackend {
                 path = r;
             }
         }
-        this.git = scm.createClient(listener, environment, build, path);
-        this.rawGit = new AdvancedCliGit(
+        this.git = new AdvancedCliGit(
                 scm, launcher, build.getBuiltOn(), new File(path.absolutize().getRemote()), listener,
                 build.getEnvironment(listener));
-        this.repoPath = rawGit.getWorkTree();
+        this.repoPath = git.getWorkTree();
     }
 
     /**
@@ -125,7 +123,7 @@ public class GitBackend extends BaseBackend {
      */
     public String getBranch() throws AdvancedSCMException {
         try {
-            return rawGit.launchCommand("rev-parse", "--abbrev-ref", "HEAD").trim();
+            return git.launchCommand("rev-parse", "--abbrev-ref", "HEAD").trim();
         }
         catch (InterruptedException exception) {
             throw new AdvancedSCMException(exception.toString());
@@ -140,7 +138,7 @@ public class GitBackend extends BaseBackend {
     public void update(String revision) throws AdvancedSCMException {
         if (!revision.isEmpty() && !getLocalBranchNames().contains(revision)) {
             try {
-                rawGit.launchCommand("checkout", "-b", revision, "--track", "origin/" + revision);
+                git.launchCommand("checkout", "-b", revision, "--track", "origin/" + revision);
             }
             catch (Exception exception) {
                 throw new AdvancedSCMException(exception.toString());
@@ -166,7 +164,7 @@ public class GitBackend extends BaseBackend {
             git.checkout().branch(branch);
             clean(branch);
             try {
-                rawGit.launchCommand("checkout", "-f");
+                git.launchCommand("checkout", "-f");
             }
             catch (InterruptedException exception) {
             }
@@ -185,7 +183,7 @@ public class GitBackend extends BaseBackend {
     public void clean(String revision) throws AdvancedSCMException {
         update(revision);
         try {
-            rawGit.launchCommand("reset", "--hard", "origin/" + revision);
+            git.launchCommand("reset", "--hard", "origin/" + revision);
         } catch (GitException exception) {
 
         }
@@ -217,9 +215,9 @@ public class GitBackend extends BaseBackend {
                 }
             }
             EmailAddress address = new EmailAddress("dummy <dummy@foo.bar>");
-            rawGit.setAuthor(address.getName(), address.getName());
-            rawGit.setCommitter(address.getName(), address.getName());
-            rawGit.launchCommand("merge", "--no-commit", "--no-ff", rev.getName());
+            git.setAuthor(address.getName(), address.getName());
+            git.setCommitter(address.getName(), address.getName());
+            git.launchCommand("merge", "--no-commit", "--no-ff", rev.getName());
         }
         catch (InterruptedException exception) {
             throw new AdvancedSCMException(exception.toString());
@@ -287,14 +285,14 @@ public class GitBackend extends BaseBackend {
                 remote = git.getRemoteUrl("origin");
             }
             try {
-                rawGit.launchCommand("remote", "rm", "feature");
+                git.launchCommand("remote", "rm", "feature");
             }
             catch (GitException exception) {
                 // when remote is new, can fail, but it's intentional
             }
-            rawGit.launchCommand("remote", "add", "feature", remote);
+            git.launchCommand("remote", "add", "feature", remote);
             try {
-                rawGit.launchCommand("fetch", "feature", branch);
+                git.launchCommand("fetch", "feature", branch);
             }
             catch (GitException exception) {
                 // can be a new local branch, so can fail, but it's intentional
