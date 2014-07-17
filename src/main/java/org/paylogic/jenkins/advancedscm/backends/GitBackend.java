@@ -216,6 +216,9 @@ public class GitBackend extends BaseBackend {
                     }
                 }
             }
+            EmailAddress address = new EmailAddress("dummy <dummy@foo.bar>");
+            rawGit.setAuthor(address.getName(), address.getName());
+            rawGit.setCommitter(address.getName(), address.getName());
             rawGit.launchCommand("merge", "--no-commit", "--no-ff", rev.getName());
         }
         catch (InterruptedException exception) {
@@ -226,8 +229,8 @@ public class GitBackend extends BaseBackend {
     public void commit(String message, String username) throws AdvancedSCMException {
         try {
             EmailAddress address = new EmailAddress(username);
-            git.setAuthor(address.getName(), address.getName());
-            git.setCommitter(address.getName(), address.getName());
+            git.setAuthor(address.getName(), address.getAddress());
+            git.setCommitter(address.getName(), address.getAddress());
             git.commit(message);
         }
         catch (InterruptedException exception) {

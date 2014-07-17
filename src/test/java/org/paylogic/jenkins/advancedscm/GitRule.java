@@ -86,6 +86,8 @@ public final class GitRule extends ExternalResource {
                 toTouch.write(toTouch.readToString() + "extra line\n", "UTF-8");
             }
         }
+        client.setAuthor("dummy", "dummy@foo.bar");
+        client.setCommitter("dummy", "dummy@foo.bar");
         client.commit("added " + Arrays.toString(names));
     }
 

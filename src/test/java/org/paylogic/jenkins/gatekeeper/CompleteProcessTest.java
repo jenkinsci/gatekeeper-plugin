@@ -71,8 +71,8 @@ public class CompleteProcessTest {
         m.hg(repo, "branch", "c3");
         m.touchAndCommit(repo, "c3");
 
-        GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner", null, null);
-        UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner");
+        GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner <test@runner.com>", null, null);
+        UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner <test@runner.com>");
         GatekeeperPush pushBuilder = new GatekeeperPush();
 
         ArrayList<ParameterValue> parameters = new ArrayList<ParameterValue>();
@@ -145,8 +145,8 @@ public class CompleteProcessTest {
         client.checkout("HEAD", "c3");
         g.touchAndCommit(repo, "c3");
 
-        GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner", null, null);
-        UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner");
+        GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner <test@runner.com>", null, null);
+        UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner <test@runner.com>");
         GatekeeperPush pushBuilder = new GatekeeperPush();
 
         ArrayList<ParameterValue> parameters = new ArrayList<ParameterValue>();
@@ -205,8 +205,8 @@ public class CompleteProcessTest {
         m.hg(repo, "branch", "c3");
         m.touchAndCommit(repo, "c3");
 
-        GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner", "release.txt", "{{release}}");
-        UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner");
+        GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner <test@runner.com>", "release.txt", "{{release}}");
+        UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner <test@runner.com>");
         GatekeeperPush pushBuilder = new GatekeeperPush();
 
         ArrayList<ParameterValue> parameters = new ArrayList<ParameterValue>();
@@ -269,8 +269,8 @@ public class CompleteProcessTest {
         client.checkout("HEAD", "c3");
         g.touchAndCommit(repo, "c3");
 
-        GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner", "release.txt", "{{release}}");
-        UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner");
+        GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner <test@runner.com>", "release.txt", "{{release}}");
+        UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner <test@runner.com>");
         GatekeeperPush pushBuilder = new GatekeeperPush();
 
         ArrayList<ParameterValue> parameters = new ArrayList<ParameterValue>();
@@ -346,8 +346,8 @@ public class CompleteProcessTest {
         parameters.add(new StringParameterValue("APPROVED_REVISION", okRevision));
         parameters.add(new StringParameterValue("REPO_URL", repo2.getAbsolutePath()));
 
-        p.getBuildersList().add(new GatekeeperMerge("JenkinsTestRunner", null, null));
-        p.getBuildersList().add(new UpmergeBuilder("JenkinsTestRunner"));
+        p.getBuildersList().add(new GatekeeperMerge("JenkinsTestRunner <test@runner.com>", null, null));
+        p.getBuildersList().add(new UpmergeBuilder("JenkinsTestRunner <test@runner.com>"));
         p.getBuildersList().add(new GatekeeperPush());
 
         m.buildAndCheck(p, "c3", new ParametersAction(parameters));
@@ -423,8 +423,8 @@ public class CompleteProcessTest {
         parameters.add(new StringParameterValue("APPROVED_REVISION", okRevision));
         parameters.add(new StringParameterValue("REPO_URL", repo2.getAbsolutePath()));
 
-        p.getBuildersList().add(new GatekeeperMerge("JenkinsTestRunner", null, null));
-        p.getBuildersList().add(new UpmergeBuilder("JenkinsTestRunner"));
+        p.getBuildersList().add(new GatekeeperMerge("JenkinsTestRunner <test@runner.com>", null, null));
+        p.getBuildersList().add(new UpmergeBuilder("JenkinsTestRunner <test@runner.com>"));
         p.getBuildersList().add(new GatekeeperPush());
 
         g.buildAndCheck(p, "c3", new ParametersAction(parameters));
