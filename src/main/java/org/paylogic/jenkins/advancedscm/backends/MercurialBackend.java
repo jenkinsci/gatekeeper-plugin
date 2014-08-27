@@ -105,6 +105,7 @@ public class MercurialBackend extends BaseBackend {
         } else if (output.contains("abort:")) {
             throw new AdvancedSCMException(output);
         }
+        clean();
     }
 
     public void stripLocal() throws AdvancedSCMException {
