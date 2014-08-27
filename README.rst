@@ -8,6 +8,7 @@ on the Jenkins Wiki for more information.
 
 .. image::
   https://jenkins.ci.cloudbees.com/buildStatus/icon?job=plugins/gatekeeper-plugin
+  :target: https://jenkins.ci.cloudbees.com/job/plugins/job/gatekeeper-plugin/
 
 
 License
