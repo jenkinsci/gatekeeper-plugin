@@ -6,6 +6,9 @@ A Jenkins plugin that performs Gatekeepering by merging 'feature' branches with 
 See `Gatekeeper Plugin <https://wiki.jenkins-ci.org/display/JENKINS/Gatekeeper+plugin>`_
 on the Jenkins Wiki for more information.
 
+.. image::
+  https://jenkins.ci.cloudbees.com/buildStatus/icon?job=plugins/gatekeeper-plugin
+
 
 License
 -------
