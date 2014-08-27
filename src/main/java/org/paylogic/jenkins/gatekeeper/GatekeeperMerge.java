@@ -99,7 +99,6 @@ public class GatekeeperMerge extends Builder {
             /* Actual gatekeepering commands.*/
             amm.pull(featureRepoUrl, featureBranch);
             amm.updateClean(targetBranch);
-            amm.clean();
             amm.mergeWorkspaceWith(okRevision, null);
             LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
                     okRevision + " from " + featureRepoUrl + " to " + targetBranch + ".");
