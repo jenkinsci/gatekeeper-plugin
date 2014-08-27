@@ -72,6 +72,7 @@ public class CompleteProcessTest {
         m.touchAndCommit(repo, "c3");
 
         GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner <test@runner.com>", null, null);
+        GatekeeperCommit commitBuilder = new GatekeeperCommit("JenkinsTestRunner <test@runner.com>");
         UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner <test@runner.com>");
         GatekeeperPush pushBuilder = new GatekeeperPush();
 
@@ -81,6 +82,7 @@ public class CompleteProcessTest {
         parameters.add(new StringParameterValue("FEATURE_BRANCH", "c3"));
 
         p.getBuildersList().add(mergeBuilder);
+        p.getBuildersList().add(commitBuilder);
         p.getBuildersList().add(upmergeBuilder);
         p.getBuildersList().add(pushBuilder);
         m.buildAndCheck(p, "c3", new ParametersAction(parameters));
@@ -146,6 +148,7 @@ public class CompleteProcessTest {
         g.touchAndCommit(repo, "c3");
 
         GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner <test@runner.com>", null, null);
+        GatekeeperCommit commitBuilder = new GatekeeperCommit("JenkinsTestRunner <test@runner.com>");
         UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner <test@runner.com>");
         GatekeeperPush pushBuilder = new GatekeeperPush();
 
@@ -155,6 +158,7 @@ public class CompleteProcessTest {
         parameters.add(new StringParameterValue("FEATURE_BRANCH", "c3"));
 
         p.getBuildersList().add(mergeBuilder);
+        p.getBuildersList().add(commitBuilder);
         p.getBuildersList().add(upmergeBuilder);
         p.getBuildersList().add(pushBuilder);
         g.buildAndCheck(p, "c3", new ParametersAction(parameters));
@@ -206,6 +210,7 @@ public class CompleteProcessTest {
         m.touchAndCommit(repo, "c3");
 
         GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner <test@runner.com>", "release.txt", "{{release}}");
+        GatekeeperCommit commitBuilder = new GatekeeperCommit("JenkinsTestRunner <test@runner.com>");
         UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner <test@runner.com>");
         GatekeeperPush pushBuilder = new GatekeeperPush();
 
@@ -215,6 +220,7 @@ public class CompleteProcessTest {
         parameters.add(new StringParameterValue("FEATURE_BRANCH", "c3"));
 
         p.getBuildersList().add(mergeBuilder);
+        p.getBuildersList().add(commitBuilder);
         p.getBuildersList().add(upmergeBuilder);
         p.getBuildersList().add(pushBuilder);
         m.buildAndCheck(p, "c3", new ParametersAction(parameters));
@@ -270,6 +276,7 @@ public class CompleteProcessTest {
         g.touchAndCommit(repo, "c3");
 
         GatekeeperMerge mergeBuilder = new GatekeeperMerge("JenkinsTestRunner <test@runner.com>", "release.txt", "{{release}}");
+        GatekeeperCommit commitBuilder = new GatekeeperCommit("JenkinsTestRunner <test@runner.com>");
         UpmergeBuilder upmergeBuilder = new UpmergeBuilder("JenkinsTestRunner <test@runner.com>");
         GatekeeperPush pushBuilder = new GatekeeperPush();
 
@@ -279,6 +286,7 @@ public class CompleteProcessTest {
         parameters.add(new StringParameterValue("FEATURE_BRANCH", "c3"));
 
         p.getBuildersList().add(mergeBuilder);
+        p.getBuildersList().add(commitBuilder);
         p.getBuildersList().add(upmergeBuilder);
         p.getBuildersList().add(pushBuilder);
         g.buildAndCheck(p, "c3", new ParametersAction(parameters));
@@ -347,6 +355,7 @@ public class CompleteProcessTest {
         parameters.add(new StringParameterValue("REPO_URL", repo2.getAbsolutePath()));
 
         p.getBuildersList().add(new GatekeeperMerge("JenkinsTestRunner <test@runner.com>", null, null));
+        p.getBuildersList().add(new GatekeeperCommit("JenkinsTestRunner <test@runner.com>"));
         p.getBuildersList().add(new UpmergeBuilder("JenkinsTestRunner <test@runner.com>"));
         p.getBuildersList().add(new GatekeeperPush());
 
@@ -424,6 +433,7 @@ public class CompleteProcessTest {
         parameters.add(new StringParameterValue("REPO_URL", repo2.getAbsolutePath()));
 
         p.getBuildersList().add(new GatekeeperMerge("JenkinsTestRunner <test@runner.com>", null, null));
+        p.getBuildersList().add(new GatekeeperCommit("JenkinsTestRunner <test@runner.com>"));
         p.getBuildersList().add(new UpmergeBuilder("JenkinsTestRunner <test@runner.com>"));
         p.getBuildersList().add(new GatekeeperPush());
 

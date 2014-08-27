@@ -39,9 +39,9 @@ import java.util.logging.Level;
 @Log
 public class GatekeeperMerge extends Builder {
 
-    public final String commitUsername;
     public final String releaseFilePath;
     public final String releaseFileContentTemplate;
+    public final String commitUsername;
 
     @DataBoundConstructor
     public GatekeeperMerge(String commitUsername, String releaseFilePath, String releaseFileContentTemplate) {
@@ -110,12 +110,6 @@ public class GatekeeperMerge extends Builder {
             LogMessageSearcher.logMessage(listener, "Gatekeeper merge merged " +
                     featureBranch + " to " + targetBranch + ".");
         }
-        commit(amm, listener, envVars, targetBranch, featureBranch, commitUsername);
-
-        // pass branches to push to later build actions
-        Map<String, String> vars = new HashMap<String, String>();
-        vars.put("BRANCHES_TO_PUSH", targetBranch);
-        build.addAction(new EnvInjectBuilderContributionAction(vars));
         return true;
     }
 
@@ -137,18 +131,6 @@ public class GatekeeperMerge extends Builder {
         amm.ensureReleaseBranch(
                 targetBranch, releaseFilePath, releaseFileContent,
                 "[Jenkins Integration Merge] " + targetBranch + " release", commitUsername);
-    }
-
-    private void commit(AdvancedSCMManager amm, BuildListener listener, EnvVars envVars, String targetBranch, String featureBranch, String commitUsername) throws AdvancedSCMException {
-        amm.commit("[Jenkins Integration Merge] Merged " + featureBranch + " into "
-                        + targetBranch,
-                commitUsername);
-        if (amm.getBranchNames(false).contains(featureBranch)) {
-            // we have to close feature branch
-            amm.closeBranch(featureBranch, "[Jenkins Integration Merge] Closing feature branch " + featureBranch, commitUsername);
-            amm.updateClean(targetBranch);
-        }
-        LogMessageSearcher.logMessage(listener, "Gatekeeper merge was committed.");
     }
 
     @Override
