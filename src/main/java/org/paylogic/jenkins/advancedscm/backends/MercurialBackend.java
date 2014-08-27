@@ -161,7 +161,7 @@ public class MercurialBackend extends BaseBackend {
 
     public void mergeWorkspaceWith(String revision, String updateTo) throws AdvancedSCMException {
         if (updateTo != null) {
-            this.updateClean(updateTo);
+            this.update(updateTo);
         }
         String output = "";
         try {
