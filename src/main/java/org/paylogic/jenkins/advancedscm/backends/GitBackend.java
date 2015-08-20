@@ -198,7 +198,7 @@ public class GitBackend extends BaseBackend {
         try {
             ObjectId rev;
             if (updateTo != null) {
-                updateClean(updateTo);
+                update(updateTo);
                 rev = git.revParse(revision);
             }
             else {
