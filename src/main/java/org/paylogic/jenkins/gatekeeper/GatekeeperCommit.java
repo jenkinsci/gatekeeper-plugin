@@ -74,7 +74,7 @@ public class GatekeeperCommit extends Builder {
         if (amm.getBranchNames(false).contains(featureBranch)) {
             // we have to close feature branch
             amm.closeBranch(featureBranch, "[Jenkins Integration Merge] Closing feature branch " + featureBranch, commitUsername);
-            amm.update(targetBranch);
+            amm.updateClean(targetBranch);
         }
         LogMessageSearcher.logMessage(listener, "Gatekeeper merge was committed.");
     }
